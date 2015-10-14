@@ -19,7 +19,7 @@ Edge::Edge(int from, int to, int capacity)
     this->capacity = capacity;
 }
 
-
+Graph::Graph(){}
 Graph::Graph(int vertex_quantity, vector <Edge> edges )
 {
     this->edges = edges;

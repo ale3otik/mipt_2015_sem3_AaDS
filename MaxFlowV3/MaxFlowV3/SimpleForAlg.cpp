@@ -10,11 +10,11 @@
 SimpleForAlg::SimpleForAlg(Graph graph):
 network(graph){}
 
-long long SimpleForAlg::getValueOfMaxFlow()
+long long SimpleForAlg::getValueOfMaxFlow() const
 {
     return network.max_flow;
 }
-Network SimpleForAlg::returnNetwork()
+Network SimpleForAlg::returnNetwork() const
 {
     return network;
 }

@@ -10,6 +10,7 @@
 #define MainHeader_h
 
 #include <vector>
+#include <queue>
 #include <exception>
 using namespace std;
 
@@ -36,6 +37,7 @@ public:
 class Graph
 {
 public:
+    Graph();
     Graph(int vertex_quantity, vector <Edge> edges );
     Edge getEdge(int position);
     int getCapacity(int position);
@@ -53,11 +55,16 @@ class Network: public Graph
 {
 public:
     friend class SimpleForAlg;
+    friend class BlockPreflowMKM;
+    
+    Network();
     Network(const Graph & graph);
     int getEdgeFlow(int index);
 private:
     vector <int> flow; // flow on edges
     long long max_flow; // value of max flow
+    
+    void bfs(int start, vector<int> & info) const;
 };
 
 /******************************************
@@ -69,8 +76,8 @@ class SimpleForAlg
 public:
     SimpleForAlg(Graph graph);
     void findMaxFlow(int s, int t);
-    Network returnNetwork();
-    long long getValueOfMaxFlow();
+    Network returnNetwork() const;
+    long long getValueOfMaxFlow() const;
     
 private:
     Network network;
@@ -88,9 +95,33 @@ private:
 /******************************************
  *
  */
-class BlockPreflow
+class BlockPreflowMKM
 {
+public:
+    BlockPreflowMKM(Graph graph);
+    void findMaxFlow(int s, int t);
+    Network returnNetwork() const;
+    long long getValueOfMaxFlow() const;
     
+private:
+    Network network;
+    Network lvl_net;
+    vector<long long> potential_in;
+    vector<long long> potential_out;
+    vector<long long> excess;
+    vector<bool> is_deleted_edge;
+    vector<bool> is_deleted_vertex;
+    vector<int> out_edge_pointer;
+    vector<int> in_edge_pointer;
+    vector<int> associated;
+    long long max_flow;
+    int start;
+    int finish;
+    
+    void makeLvlNet(vector <int> & bfs_info);
+    void initPotential();
+    void dfsDeleteEmptyNodes(int i);
+    void dfsPushFlow(int s);
 };
 
 
