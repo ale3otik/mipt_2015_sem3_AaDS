@@ -11,7 +11,8 @@
 
 #include <vector>
 #include <queue>
-#include <exception>
+#include <iostream>
+#include <assert.h>
 using namespace std;
 
 /**************************
@@ -30,6 +31,10 @@ public:
 class Vertex
 {
 public:
+    Vertex():
+    incoming(),
+    outgoing(){}
+    
     vector<int> incoming;
     vector<int> outgoing;
 };
@@ -114,14 +119,16 @@ private:
     vector<int> out_edge_pointer;
     vector<int> in_edge_pointer;
     vector<int> associated;
-    long long max_flow;
+    vector<int> null_potential;
     int start;
     int finish;
     
     void makeLvlNet(vector <int> & bfs_info);
     void initPotential();
     void dfsDeleteEmptyNodes(int i);
-    void dfsPushFlow(int s);
+    void dfsPushFlowForward(int s);
+    void dfsPushFlowBack(int s);
+    void countValueOfMaxFlow();
 };
 
 

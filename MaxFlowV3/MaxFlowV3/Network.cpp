@@ -31,7 +31,7 @@ void Network::bfs(int start, vector<int> & info) const// dist / last edge
     info.resize(vertex.size(),-1);
     
     queue<int> bfs_queue;
-    info[start] = -1;
+    info[start] = 0;
     bfs_queue.push(start);
     
     while(!bfs_queue.empty())

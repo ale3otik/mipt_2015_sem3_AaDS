@@ -1,5 +1,5 @@
 
-#include <iostream>
+
 #include "MainHeader.h"
 
 int main()
@@ -20,14 +20,14 @@ int main()
     }
 
     Graph graph(n,edges);
-    SimpleForAlg alg(graph);
+    BlockPreflowMKM alg(graph);
     alg.findMaxFlow(0, n-1);
     
     Network net = alg.returnNetwork();
     cout << alg.getValueOfMaxFlow() << endl;
     for(int i = 0;i < m; ++i)
     {
-        cout << net.getEdgeFlow(i) << endl;
+        cout <<net.getEdgeFlow(i) << endl;
     }
     return 0;
 }

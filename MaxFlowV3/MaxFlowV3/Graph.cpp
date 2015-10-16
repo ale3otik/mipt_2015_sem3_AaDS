@@ -34,11 +34,7 @@ Graph::Graph(int vertex_quantity, vector <Edge> edges )
 
 Edge Graph::getEdge(int position)
 {
-    if(position >= 0 && position < edges.size())
-    {
-        return edges[position];
-    }
-    throw out_of_range("error getEdge index");
+    return edges[position];
 }
 
 int Graph::getCapacity(int position)

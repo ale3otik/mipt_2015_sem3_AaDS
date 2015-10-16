@@ -6,8 +6,11 @@
 //  Copyright © 2015 Alex. All rights reserved.
 //
 
-#include "MainHeader.h"
+//#define NDEBUG
 
+#include "MainHeader.h"
+#include <assert.h>
+const long long MAX_LONG = 1e9 * 1e6 + 10;
 BlockPreflowMKM::BlockPreflowMKM(Graph graph):
 network(graph),
 lvl_net(){}
@@ -15,18 +18,33 @@ Network BlockPreflowMKM::returnNetwork() const{
     return this->network;
 }
 long long BlockPreflowMKM::getValueOfMaxFlow() const{
-    return this->max_flow;
+    return network.max_flow;
+}
+
+void BlockPreflowMKM::countValueOfMaxFlow()
+{
+    network.max_flow = 0;
+    for(int i = 0; i < network.vertex[start].outgoing.size(); ++i)
+    {
+        network.max_flow += network.flow[network.vertex[start].outgoing[i]];
+    }
+    for(int i = 0; i < network.vertex[start].incoming.size(); ++i)
+    {
+        network.max_flow -= network.flow[network.vertex[start].incoming[i]];
+    }
 }
 
 /***************************************************/
 
 void BlockPreflowMKM::makeLvlNet(vector <int> & bfs_info)
 {
-    lvl_net.vertex.resize(network.vertex.size());
-    out_edge_pointer.resize(network.vertex.size(),0);
-    in_edge_pointer.resize(network.vertex.size(),0);
-    is_deleted_vertex.resize(network.vertex.size(),false);
-    excess.resize(network.vertex.size(),0);
+    lvl_net.vertex = vector<Vertex>(network.vertex.size());
+    lvl_net.edges = vector<Edge>();
+    out_edge_pointer = vector<int>(network.vertex.size(),0);
+    in_edge_pointer = vector<int>(network.vertex.size(),0);
+    is_deleted_vertex = vector<bool>(network.vertex.size(),false);
+    associated.resize(0);
+    excess = vector<long long>(network.vertex.size(),0);
     for(int i = 0; i < network.vertex.size(); ++i)
     {
         Vertex v_last = network.vertex[i];
@@ -47,7 +65,7 @@ void BlockPreflowMKM::makeLvlNet(vector <int> & bfs_info)
             Edge e_cur = network.edges[*e_it];
             if(!is_incoming)
             {
-                if(bfs_info[e_cur.to] == bfs_info[i] + 1 && e_cur.capacity > network.flow[*e_it])
+                if(bfs_info[e_cur.to] == bfs_info[i] + 1 && bfs_info[e_cur.to] <= bfs_info[finish] && e_cur.capacity > network.flow[*e_it])
                 {
                     lvl_net.edges.push_back(Edge(i,e_cur.to, e_cur.capacity - network.flow[*e_it]));
                     lvl_net.vertex[i].outgoing.push_back((int)lvl_net.edges.size() - 1);
@@ -58,7 +76,7 @@ void BlockPreflowMKM::makeLvlNet(vector <int> & bfs_info)
             }
             else
             {
-                if(bfs_info[e_cur.from] == bfs_info[i] + 1 && network.flow[*e_it] > 0)
+                if(bfs_info[e_cur.from] == bfs_info[i] + 1 && bfs_info[e_cur.from] <= bfs_info[finish]&& network.flow[*e_it] > 0)
                 {
                     lvl_net.edges.push_back(Edge(i,e_cur.from,network.flow[*e_it]));
                     lvl_net.vertex[i].outgoing.push_back((int)lvl_net.edges.size() - 1);
@@ -76,14 +94,14 @@ void BlockPreflowMKM::makeLvlNet(vector <int> & bfs_info)
             }
         }
     }
-    lvl_net.flow.resize(lvl_net.edges.size(),0);
-    is_deleted_edge.resize(lvl_net.edges.size(),0);
+    lvl_net.flow = vector<int>(lvl_net.edges.size(),0);
+    is_deleted_edge = vector<bool>(lvl_net.edges.size(),false);
 }
 
 void BlockPreflowMKM::initPotential()
 {
-    potential_in.resize(network.vertex.size(),0);
-    potential_out.resize(network.vertex.size(),0);
+    potential_in = vector<long long>(network.vertex.size(),0);
+    potential_out = vector<long long>(network.vertex.size(),0);
     
     for(int i = 0 ;i < lvl_net.vertex.size(); ++i)
     {
@@ -100,7 +118,7 @@ void BlockPreflowMKM::initPotential()
 
 void BlockPreflowMKM::dfsDeleteEmptyNodes(int s)
 {
-    if(is_deleted_vertex[s]) return;
+    if(is_deleted_vertex[s] || s == start || s == finish) return;
     
     queue<int> next_deleted;
     for(int i = out_edge_pointer[s]; i < lvl_net.vertex[s].outgoing.size();++i)
@@ -108,12 +126,13 @@ void BlockPreflowMKM::dfsDeleteEmptyNodes(int s)
         int e_ind = lvl_net.vertex[s].outgoing[i];
         int to = lvl_net.edges[e_ind].to;
         
-        if(to != finish && !is_deleted_edge[e_ind])
+        if(!is_deleted_edge[e_ind])
         {
-            potential_in[to] -= lvl_net.edges[e_ind].capacity;
+            potential_in[to] -= (lvl_net.edges[e_ind].capacity - lvl_net.flow[e_ind]);
+            potential_out[s] -= (lvl_net.edges[e_ind].capacity - lvl_net.flow[e_ind]);
             if(!is_deleted_vertex[to] && min(potential_in[to],potential_out[to]) == 0)
             {
-                next_deleted.push(to);
+                if(to != finish) next_deleted.push(to);
             }
         }
         
@@ -124,12 +143,13 @@ void BlockPreflowMKM::dfsDeleteEmptyNodes(int s)
     {
         int e_ind = lvl_net.vertex[s].incoming[i];
         int from = lvl_net.edges[e_ind].from;
-        if(from != start && !is_deleted_edge[e_ind])
+        if(!is_deleted_edge[e_ind])
         {
-            potential_out[from] -= lvl_net.edges[e_ind].capacity;
+            potential_out[from] -= (lvl_net.edges[e_ind].capacity - lvl_net.flow[e_ind]);
+            potential_in[s] -= lvl_net.edges[e_ind].capacity - lvl_net.flow[e_ind];
             if(!is_deleted_vertex[from] && min(potential_in[from],potential_out[from]) == 0)
             {
-                next_deleted.push(from);
+               if(from != start) next_deleted.push(from);
             }
         }
         
@@ -145,40 +165,125 @@ void BlockPreflowMKM::dfsDeleteEmptyNodes(int s)
     }
 }
 
-void BlockPreflowMKM::dfsPushFlow(int s)
+void BlockPreflowMKM::dfsPushFlowForward(int s)
 {
-    Vertex cur_v = lvl_net.vertex[s];
+    if(s == finish) return;
     
-    vector<int> saturated;
-    long long cur_excess = excess[s];
+    Vertex cur_v = lvl_net.vertex[s];
+    queue<int> next_vertices;
+
     // to fin
-    while(cur_excess > 0 && out_edge_pointer[s] < cur_v.outgoing.size())
+    while(excess[s] > 0 && out_edge_pointer[s] < cur_v.outgoing.size())
     {
-        Edge cur_e = lvl_net.edges[out_edge_pointer[s]];
-        if(cur_e.capacity - lvl_net.flow[out_edge_pointer[s]] > cur_excess)
+        int e_ind = lvl_net.vertex[s].outgoing[out_edge_pointer[s]];
+        if(is_deleted_edge[e_ind])
         {
-            lvl_net.flow[out_edge_pointer[s]] += cur_excess;
+            ++ out_edge_pointer[s];
+            continue;
+        }
+        
+        Edge cur_e = lvl_net.edges[e_ind];
+        if(cur_e.capacity - lvl_net.flow[e_ind] > excess[s])
+        {
+            potential_out[s] -= excess[s];
+            potential_in[cur_e.to] -= excess[s];
+           
+            excess[cur_e.to] += excess[s];
+            lvl_net.flow[e_ind] += excess[s];
+            excess[s] = 0;
             
-            cur_excess = 0;
+            next_vertices.push(cur_e.to);
             break;
         }
         else
         {
+            potential_out[s] -= cur_e.capacity - lvl_net.flow[e_ind];
+            potential_in[cur_e.to] -= cur_e.capacity - lvl_net.flow[e_ind];
+         
+            excess[cur_e.to] += cur_e.capacity - lvl_net.flow[e_ind];
+            excess[s] -= cur_e.capacity - lvl_net.flow[e_ind];
             
-            saturated.push_back(out_edge_pointer[s]);
+            lvl_net.flow[e_ind] = cur_e.capacity;
+            
+            is_deleted_edge[e_ind] = true;
+            next_vertices.push(cur_e.to);
             ++out_edge_pointer[s];
         }
     }
+    assert(excess[s] == 0);
     
-    //back to start
-    cur_excess = excess[s];
-    while(cur_excess > 0 && in_edge_pointer[s] < cur_v.incoming.size())
+    if(min(potential_in[s],potential_out[s]) == 0)
     {
-        
+        null_potential.push_back(s);
     }
     
-    excess[s] = 0;
+    while (!next_vertices.empty())
+    {
+        dfsPushFlowForward(next_vertices.front());
+        next_vertices.pop();
+    }
+}
+
+void BlockPreflowMKM::dfsPushFlowBack(int s)
+{
     
+    if(s == start) return;
+    
+    Vertex cur_v = lvl_net.vertex[s];
+    queue<int> next_vertices;
+    
+    // to start
+    while(excess[s] > 0 && in_edge_pointer[s] < cur_v.incoming.size())
+    {
+        int e_ind = lvl_net.vertex[s].incoming[in_edge_pointer[s]];
+        if(is_deleted_edge[e_ind])
+        {
+            ++ in_edge_pointer[s];
+            continue;
+        }
+        
+        Edge cur_e = lvl_net.edges[e_ind];
+        if(cur_e.capacity - lvl_net.flow[e_ind] > excess[s])
+        {
+            potential_in[s] -= excess[s];
+            potential_out[cur_e.from] -= excess[s];
+            
+            excess[cur_e.from] += excess[s];
+            lvl_net.flow[e_ind] += excess[s];
+            excess[s] = 0;
+            
+            next_vertices.push(cur_e.from);
+            break;
+        }
+        else
+        {
+
+            potential_in[s] -= cur_e.capacity - lvl_net.flow[e_ind];
+            potential_out[cur_e.from] -= cur_e.capacity - lvl_net.flow[e_ind];
+
+            excess[cur_e.from] += cur_e.capacity - lvl_net.flow[e_ind];
+            excess[s] -= cur_e.capacity - lvl_net.flow[e_ind];
+            
+            lvl_net.flow[e_ind] = cur_e.capacity;
+            
+            is_deleted_edge[e_ind] = true;
+            next_vertices.push(cur_e.from);
+            ++in_edge_pointer[s];
+        }
+    }
+    
+    assert(excess[s] == 0);
+    
+    if(min(potential_in[s],potential_out[s]) == 0)
+    {
+        null_potential.push_back(s);
+    }
+    
+    while (!next_vertices.empty())
+    {
+        dfsPushFlowBack(next_vertices.front());
+        next_vertices.pop();
+    }
 }
 
 void BlockPreflowMKM::findMaxFlow(int s, int t)
@@ -195,19 +300,29 @@ void BlockPreflowMKM::findMaxFlow(int s, int t)
         
         makeLvlNet(bfs_info);
         initPotential();
+        potential_in[start] = MAX_LONG;
+        potential_out[finish] = MAX_LONG;
+        
         for(int i = 0 ; i < lvl_net.vertex.size(); ++i)
         {
-            dfsDeleteEmptyNodes(i);
+            if(min(potential_out[i],potential_in[i]) == 0)
+            {
+                dfsDeleteEmptyNodes(i);
+            }
         }
         
+
         while(true) //find block flow
         {
             //find min potential
-            long long min_potential = network.edges.size() + 1;
+            
+            null_potential.resize(0);
+            
+            long long min_potential = MAX_LONG;
             int min_ind = -1;
             for(int i = 0; i < lvl_net.vertex.size(); ++i)
             {
-                if(i == start || i == finish || is_deleted_vertex[i]) continue;
+                if(is_deleted_vertex[i] || i == finish) continue;
             
                 if(min_potential > min(potential_out[i],potential_in[i]))
                 {
@@ -215,11 +330,42 @@ void BlockPreflowMKM::findMaxFlow(int s, int t)
                     min_ind = i;
                 }
             }
-            if(min_ind == -1) break;
+            if(min_potential == MAX_LONG || min_potential == 0) break;
             
-            excess[min_ind] += min_potential;
-            dfsPushFlow(min_ind);
+            excess[min_ind] = min_potential;
+            if(excess[min_ind] > min(potential_out[min_ind],potential_in[min_ind]))
+            {
+                assert(0);
+            }
+            
+            dfsPushFlowForward(min_ind);
+
+            excess[min_ind] = min_potential;
+            dfsPushFlowBack(min_ind);
+            
+            for(int i = 0 ; i < null_potential.size(); ++i)
+            {
+                if(!is_deleted_vertex[null_potential[i]])
+                {
+                    dfsDeleteEmptyNodes(null_potential[i]);
+                }
+            }
+        }
+        // add new flow to the base network
+        for(int i = 0; i < lvl_net.edges.size(); ++i)
+        {
+            Edge associated_edge = network.edges[associated[i]];
+            Edge cur_edge = lvl_net.edges[i];
+            if(cur_edge.from == associated_edge.from)
+            {
+                network.flow[associated[i]] += lvl_net.flow[i];
+            }
+            else
+            {
+                network.flow[associated[i]] -= lvl_net.flow[i];
+            }
         }
     }
+    countValueOfMaxFlow();
 }
 
