@@ -165,7 +165,7 @@ void BlockPreflowMKM::dfsDeleteEmptyNodes(int s)
     }
 }
 
-void BlockPreflowMKM::dfsPushFlowForward(int s)
+void BlockPreflowMKM::pushFlowForward(int s)
 {
     if(s == finish) return;
     
@@ -219,12 +219,12 @@ void BlockPreflowMKM::dfsPushFlowForward(int s)
     
     while (!next_vertices.empty())
     {
-        dfsPushFlowForward(next_vertices.front());
+        pushFlowForward(next_vertices.front());
         next_vertices.pop();
     }
 }
 
-void BlockPreflowMKM::dfsPushFlowBack(int s)
+void BlockPreflowMKM::pushFlowBack(int s)
 {
     
     if(s == start) return;
@@ -281,7 +281,7 @@ void BlockPreflowMKM::dfsPushFlowBack(int s)
     
     while (!next_vertices.empty())
     {
-        dfsPushFlowBack(next_vertices.front());
+        pushFlowBack(next_vertices.front());
         next_vertices.pop();
     }
 }
@@ -299,6 +299,7 @@ void BlockPreflowMKM::findMaxFlow(int s, int t)
         if(bfs_info[finish] == -1) break;
         
         makeLvlNet(bfs_info);
+     
         initPotential();
         potential_in[start] = MAX_LONG;
         potential_out[finish] = MAX_LONG;
@@ -338,10 +339,10 @@ void BlockPreflowMKM::findMaxFlow(int s, int t)
                 assert(0);
             }
             
-            dfsPushFlowForward(min_ind);
+            pushFlowForward(min_ind);
 
             excess[min_ind] = min_potential;
-            dfsPushFlowBack(min_ind);
+            pushFlowBack(min_ind);
             
             for(int i = 0 ; i < null_potential.size(); ++i)
             {

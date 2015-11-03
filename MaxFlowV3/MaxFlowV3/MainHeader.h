@@ -126,8 +126,8 @@ private:
     void makeLvlNet(vector <int> & bfs_info);
     void initPotential();
     void dfsDeleteEmptyNodes(int i);
-    void dfsPushFlowForward(int s);
-    void dfsPushFlowBack(int s);
+    void pushFlowForward(int s);
+    void pushFlowBack(int s);
     void countValueOfMaxFlow();
 };
 
