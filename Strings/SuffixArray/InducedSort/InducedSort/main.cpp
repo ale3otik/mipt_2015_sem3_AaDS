@@ -17,7 +17,7 @@ int main(int argc, const char * argv[]) {
     cin >> str;
     vector<ll> suff_array;
 
-    SAInducedSorter::sort(str,suff_array);
+    SAInducedSort::sort(str,suff_array);
     for(int i = 0; i < suff_array.size(); ++i){
         cout << suff_array[i] <<" ";
     }

@@ -9,10 +9,12 @@
 #include "SAInducedSort.hpp"
 #include <cassert>
 
+#include <iostream>
+
 typedef long long ll;
 using namespace std;
 
-void SAInducedSorter::initLmsPointers(const vector<bool> & type, vector<ll> & lms_pointers, vector<bool> & is_lms) {
+void SAInducedSort::RecursiveSorter::initLmsPointers() {
     is_lms.assign(type.size(), false);
     for(ll i = 1; i < type.size(); ++i) {
         if(type[i] == S_TYPE && type[i-1] == L_TYPE) {
@@ -22,7 +24,7 @@ void SAInducedSorter::initLmsPointers(const vector<bool> & type, vector<ll> & lm
     }
 }
 
-void SAInducedSorter::initType(const std::vector<ll> & str, std::vector<bool> & type) {
+void SAInducedSort::RecursiveSorter::initType() {
     type[str.size() - 1] = S_TYPE;
     for(ll i = str.size() - 2; i >= 0; --i) {
         if(str[i] < str[i+1]) {
@@ -37,7 +39,7 @@ void SAInducedSorter::initType(const std::vector<ll> & str, std::vector<bool> & 
     }
 }
 
-void SAInducedSorter::initBuckets(const std::vector<ll> & str, std::vector<ll> & buckets) {
+void SAInducedSort::RecursiveSorter::initBuckets() {
     buckets.assign(buckets.size(),0);
     for(ll i = 0; i < str.size(); ++i) {
         ++buckets[str[i]];
@@ -50,11 +52,7 @@ void SAInducedSorter::initBuckets(const std::vector<ll> & str, std::vector<ll> &
     }
 }
 
-bool SAInducedSorter::isLmsSubstringEqual(const vector<long long> & str,
-                                const vector<bool> & type,
-                                const vector<bool> & is_lms,
-                                const long long fr,
-                                const long long sd) {
+bool SAInducedSort::RecursiveSorter::isLmsSubstringEqual(const long long fr, const long long sd) {
     ll i = 0;
     while(true) {
         if(str[fr + i] != str[sd + i]) return false;
@@ -64,28 +62,23 @@ bool SAInducedSorter::isLmsSubstringEqual(const vector<long long> & str,
     }
 }
 
-void SAInducedSorter::makeNewStr(std::vector<long long> & new_str,
-                                 long long & new_alp,
-                                 const std::vector<long long> & str,
-                                 const std::vector<bool> & is_lms,
-                                 const std::vector<bool> & type,
-                                 const std::vector<long long> & suff_array) {
+void SAInducedSort::RecursiveSorter::buildNewStr() {
     
     /******** make new alphabet ***************************/
-    new_alp = 0;
+    next_alp = 0;
     ll r = suff_array.size() - 1;
     ll l = r - 1;
     vector<ll> alp_type(str.size(),-1);
-    alp_type[r] = new_alp;
+    alp_type[r] = next_alp;
     
     l = r - 1;
     while(l >= 0) {
         if(is_lms[l]){
-            if(isLmsSubstringEqual(str, type, is_lms, l, r)) {
+            if(isLmsSubstringEqual(l, r)) {
                 alp_type[l] = alp_type[r];
             } else {
-                ++new_alp;
-                alp_type[l] = new_alp;
+                ++next_alp;
+                alp_type[l] = next_alp;
             }
             r = l;
         }
@@ -95,35 +88,46 @@ void SAInducedSorter::makeNewStr(std::vector<long long> & new_str,
     /****************** build new str **********************/
     for(ll i = 0, j = 0; i < str.size(); ++i) {
         if(is_lms[i]) {
-            new_str[j] = alp_type[i];
+            next_str[j] = alp_type[i];
             ++j;
         }
     }
 }
 
-/***************sorting of lms prefixes*****************************/
-void SAInducedSorter::LMSinducedSort(
-                                     const vector<ll> & str,
-                                     const vector<ll> & lms_pointers,
-                                     vector<ll> & buckets,
-                                     vector<ll> & suff_array,
-                                     vector<bool> & type) {
-    
+/***************sorting of lms prefixes or induce SA from SA1 **************/
+void SAInducedSort::RecursiveSorter::lmsInitForSort(vector<ll> bucket_tails) {
+    for(ll i = 0; i < lms_pointers.size(); ++i) {
+        ll lms_head = lms_pointers[i];
+        suff_array[bucket_tails[str[lms_head]]] = lms_head;
+        --bucket_tails[str[lms_head]];
+    }
+}
+
+void SAInducedSort::RecursiveSorter::saInitForSort(vector<ll> bucket_tails) {
+    for(ll i = next_suff_array.size() - 1; i >= 0; --i) {
+        suff_array[bucket_tails[str[lms_head]]] = next_suff_array[i];
+        --bucket_tails[str[lms_head]];
+    }
+}
+
+void SAInducedSort::RecursiveSorter::generalInducedSort(TypeOfSort action) {
+
     vector<ll> bucket_heads(buckets);
     vector<ll> bucket_tails(bucket_heads.size());
-    
+    bucket_tails[bucket_tails.size() - 1] = bucket_tails.size() - 1;
     for(ll i = 0; i < bucket_tails.size() - 1; ++i) {
         bucket_tails[i] = bucket_heads[i + 1] - 1;
     }
-    bucket_tails[bucket_tails.size() - 1] = bucket_tails.size() - 1;
-    vector<ll> tmp_bucket_tails(bucket_tails);
     
-    //step 1 : first initialization by lms substrings
-    for(ll i = 0; i < lms_pointers.size(); ++i) {
-        ll lms_head = lms_pointers[i];
-        suff_array[tmp_bucket_tails[str[lms_head]]] = lms_head;
-        --tmp_bucket_tails[str[lms_head]];
+    switch (action) {
+        case LMSsubstrings:
+            //step 1 : first initialization by lms substrings
+            lmsInitForSort(bucket_tails);
+            break;
+        case InduceSAfromSA1:
+            break;
     }
+    
     //step 2 : induced sort of lms prefixes
     // scan from head to end
     // assign from head to end each bucket
@@ -150,30 +154,37 @@ void SAInducedSorter::LMSinducedSort(
     }
 }
 
-void SAInducedSorter::SAinducedSort(vector<ll> & str, vector<ll> & suff_array, const ll alp_size) {
-    ll length = str.size();
+void SAInducedSort::RecursiveSorter::SAinducedSort() {
     suff_array.clear();
-    suff_array.resize(length,-1);
+    suff_array.resize(str.size(), -1);
     
-    vector<bool> type(length); // L or S type
-    vector<ll> lms_pointers; // positions of all first symb in LMS substrings
-    vector<ll> buckets(alp_size); //index of head each i-sym bucket
-    vector<bool> is_lms(length);
+    initType();
+    initLmsPointers();
+    initBuckets();
+    generalInducedSort(LMSsubstrings);
     
-    initType(str, type);
-    initLmsPointers(type, lms_pointers, is_lms);
-    initBuckets(str,buckets);
-    LMSinducedSort(str,lms_pointers,buckets,suff_array,type);
+    next_str.resize(lms_pointers.size());
+    next_suff_array.resize(lms_pointers.size());
+    buildNewStr();
     
-    ll new_alp;
-    vector<ll> new_str(lms_pointers.size());
-    makeNewStr(new_str, new_alp, str, is_lms, type, suff_array);
+    RecursiveSorter(next_str,next_suff_array,next_alp).SAinducedSort();
+    
+    suff_array.assign(suff_array.size(), -1);
     
     
 }
+SAInducedSort::RecursiveSorter::RecursiveSorter(const vector<ll> & rcv_str,
+                                                vector<ll> & suff_array,
+                                                const ll alp_sz):
+alp_size(alp_sz),
+str(rcv_str),
+suff_array(suff_array),
+buckets(alp_sz),
+type(rcv_str.size()),
+is_lms(rcv_str.size()){};
 
 /********************************************************************/
-void SAInducedSorter::sort(const string & inputStr, vector<ll> & ans_suff_array) {
+void SAInducedSort::sort(const string & inputStr, vector<ll> & ans_suff_array) {
     if(inputStr.size() == 0) return;
     
     ll shift = LONG_MAX;
@@ -183,15 +194,14 @@ void SAInducedSorter::sort(const string & inputStr, vector<ll> & ans_suff_array)
     }
     
     vector<ll> str(inputStr.size() + 1);
-    str[str.size()-1] = special_symb;
+    str[str.size()-1] = 0; // special symb
     
     for(ll i = 0; i < inputStr.size(); ++i) {
         str[i] = inputStr[i] - shift + 1;
     }
-    
     vector<ll> suff_array;
-
-    SAinducedSort(str, suff_array, ALP_SIZE + 1);
+    
+    RecursiveSorter(str,suff_array,ALP_SIZE + 1).SAinducedSort();
     
     /* repair right answer */
 }
