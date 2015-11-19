@@ -14,8 +14,11 @@
 class SAInducedSort{
 public:
     static void sort(const std::string & str, std::vector<long long> & suff_array);
+    static void buildLCP(const std::string & str,
+                         const std::vector<long long> & suff_arr,
+                         std::vector<long long> & lcp);
 private:
-    static const int ALP_SIZE = 26;
+
     class RecursiveSorter {
     public:
         RecursiveSorter(const std::vector<long long> & str,
@@ -29,9 +32,9 @@ private:
             InduceSAfromSA1
         };
         
-        const bool L_TYPE = false;
-        const bool S_TYPE = true;
-        const char special_symb = 0;
+        static const bool L_TYPE = false;
+        static const bool S_TYPE = true;
+
         const long long alp_size;
 
         const std::vector<long long> & str;
@@ -50,11 +53,12 @@ private:
         
         bool isLmsSubstringEqual(const long long fr, const long long sd);
         void buildNewStr();
-        void initType();
+        bool initType(); // return is each symb unique
         void initLmsPointers();
         void initBuckets();
         void lmsInitForSort(std::vector<long long> bucket_tails);
         void saInitForSort(std::vector<long long> bucket_tails);
+        void SAsimpleSort();
         void generalInducedSort(TypeOfSort action);
     };
 };

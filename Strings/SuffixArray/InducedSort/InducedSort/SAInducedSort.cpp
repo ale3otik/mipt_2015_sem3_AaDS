@@ -9,8 +9,6 @@
 #include "SAInducedSort.hpp"
 #include <cassert>
 
-#include <iostream>
-
 typedef long long ll;
 using namespace std;
 
@@ -24,9 +22,17 @@ void SAInducedSort::RecursiveSorter::initLmsPointers() {
     }
 }
 
-void SAInducedSort::RecursiveSorter::initType() {
+bool SAInducedSort::RecursiveSorter::initType() {
+    if(str.size() == 1) return true;
+    bool isEachUnique = true;
+    vector<bool> used(alp_size,false);
+    
     type[str.size() - 1] = S_TYPE;
     for(ll i = str.size() - 2; i >= 0; --i) {
+        
+        if(used[str[i]]) isEachUnique = false;
+        used[str[i]] = true;
+        
         if(str[i] < str[i+1]) {
             type[i] = S_TYPE;
         } else {
@@ -37,6 +43,7 @@ void SAInducedSort::RecursiveSorter::initType() {
             }
         }
     }
+    return isEachUnique;
 }
 
 void SAInducedSort::RecursiveSorter::initBuckets() {
@@ -59,6 +66,7 @@ bool SAInducedSort::RecursiveSorter::isLmsSubstringEqual(const long long fr, con
         if(type[fr + i] != type[sd + i]) return false;
         if(i > 0 && is_lms[fr + i]) return true;
         ++i;
+        assert(fr + i < str.size() && sd + i < str.size());
     }
 }
 
@@ -84,7 +92,7 @@ void SAInducedSort::RecursiveSorter::buildNewStr() {
         }
         --l;
     }
-    
+    ++next_alp;
     /****************** build new str **********************/
     for(ll i = 0, j = 0; i < str.size(); ++i) {
         if(is_lms[i]) {
@@ -105,8 +113,9 @@ void SAInducedSort::RecursiveSorter::lmsInitForSort(vector<ll> bucket_tails) {
 
 void SAInducedSort::RecursiveSorter::saInitForSort(vector<ll> bucket_tails) {
     for(ll i = next_suff_array.size() - 1; i >= 0; --i) {
-        suff_array[bucket_tails[str[lms_head]]] = next_suff_array[i];
-        --bucket_tails[str[lms_head]];
+        ll checked_position = lms_pointers[next_suff_array[i]];
+        suff_array[bucket_tails[str[checked_position]]] = checked_position;
+        --bucket_tails[str[checked_position]];
     }
 }
 
@@ -115,7 +124,7 @@ void SAInducedSort::RecursiveSorter::generalInducedSort(TypeOfSort action) {
     vector<ll> bucket_heads(buckets);
     vector<ll> bucket_tails(bucket_heads.size());
     bucket_tails[bucket_tails.size() - 1] = bucket_tails.size() - 1;
-    for(ll i = 0; i < bucket_tails.size() - 1; ++i) {
+    for(ll i = 0; i < (ll)bucket_tails.size() - 1; ++i) {
         bucket_tails[i] = bucket_heads[i + 1] - 1;
     }
     
@@ -125,6 +134,7 @@ void SAInducedSort::RecursiveSorter::generalInducedSort(TypeOfSort action) {
             lmsInitForSort(bucket_tails);
             break;
         case InduceSAfromSA1:
+            saInitForSort(bucket_tails);
             break;
     }
     
@@ -143,7 +153,7 @@ void SAInducedSort::RecursiveSorter::generalInducedSort(TypeOfSort action) {
     
     // scan from end to head
     // assign from end to head each bucket
-    for( ll i = suff_array.size() - 1; i >= 0; --i) {
+    for( ll i = (ll)suff_array.size() - 1; i >= 0; --i) {
         if(suff_array[i] <= 0) continue;
         
         ll checked_pos = suff_array[i] - 1;
@@ -153,16 +163,38 @@ void SAInducedSort::RecursiveSorter::generalInducedSort(TypeOfSort action) {
         }
     }
 }
+void SAInducedSort::RecursiveSorter::SAsimpleSort() {
+    vector<ll> sorted(alp_size,-1);
+    for(ll i = 0; i < str.size(); ++i) {
+        sorted[str[i]] = i;
+    }
+    
+    ll it = 0;
+    for(ll i = 0; i < alp_size; ++i) {
+        if(sorted[i] != -1) {
+            suff_array[it++] = sorted[i];
+        }
+    }
+}
 
 void SAInducedSort::RecursiveSorter::SAinducedSort() {
     suff_array.clear();
     suff_array.resize(str.size(), -1);
     
-    initType();
+    // all symbols are uniq
+    
+    bool isEachSymbUnique = initType();
+    
+    if(isEachSymbUnique) {
+        SAsimpleSort();
+        return;
+    }
     initLmsPointers();
     initBuckets();
     generalInducedSort(LMSsubstrings);
     
+    next_str.clear();
+    next_suff_array.clear();
     next_str.resize(lms_pointers.size());
     next_suff_array.resize(lms_pointers.size());
     buildNewStr();
@@ -170,39 +202,68 @@ void SAInducedSort::RecursiveSorter::SAinducedSort() {
     RecursiveSorter(next_str,next_suff_array,next_alp).SAinducedSort();
     
     suff_array.assign(suff_array.size(), -1);
-    
-    
+    generalInducedSort(InduceSAfromSA1);
 }
+
 SAInducedSort::RecursiveSorter::RecursiveSorter(const vector<ll> & rcv_str,
                                                 vector<ll> & suff_array,
                                                 const ll alp_sz):
 alp_size(alp_sz),
 str(rcv_str),
 suff_array(suff_array),
-buckets(alp_sz),
 type(rcv_str.size()),
-is_lms(rcv_str.size()){};
+is_lms(rcv_str.size()),
+buckets(alp_sz){};
 
 /********************************************************************/
-void SAInducedSort::sort(const string & inputStr, vector<ll> & ans_suff_array) {
+
+void SAInducedSort::buildLCP(const string & str, const std::vector<ll> & suff_array, std::vector<ll>  &lcp) {
+    ll length = str.size();
+    if(length != lcp.size()) lcp.resize(length);
+
+    vector<ll> pos(length);
+    for(ll i = 0; i < length; ++i) {
+        pos[suff_array[i]] = i;
+    }
+    
+    ll k = 0;
+    for(ll i = 0; i < length; ++i)
+    {
+        if(k > 0) --k;
+        if(pos[i] == length - 1) {
+            lcp[length - 1] = -1;
+            k = 0;
+        } else {
+            ll j = suff_array[pos[i] + 1];
+            while(max(i + k, j + k) < length && str[i + k] == str[j + k]) {
+                ++k;
+            }
+            
+            lcp[pos[i]] = k;
+        }
+    }
+}
+
+/********************************************************************/
+void SAInducedSort::sort(const string & inputStr, vector<ll> & suff_array) {
     if(inputStr.size() == 0) return;
-    
+    ll alp_size = 0;
     ll shift = LONG_MAX;
-    
+   
     for(ll i = 0; i < inputStr.size(); ++i){
         if(inputStr[i] < shift) shift = inputStr[i];
+        if(inputStr[i] > alp_size) alp_size = inputStr[i];
     }
     
     vector<ll> str(inputStr.size() + 1);
     str[str.size()-1] = 0; // special symb
     
+    //to count different symbs
     for(ll i = 0; i < inputStr.size(); ++i) {
         str[i] = inputStr[i] - shift + 1;
     }
-    vector<ll> suff_array;
-    
-    RecursiveSorter(str,suff_array,ALP_SIZE + 1).SAinducedSort();
-    
-    /* repair right answer */
+    alp_size -= shift - 2;
+
+    RecursiveSorter(str,suff_array,alp_size).SAinducedSort();
 }
 
