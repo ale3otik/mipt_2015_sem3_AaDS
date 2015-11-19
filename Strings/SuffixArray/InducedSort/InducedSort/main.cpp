@@ -33,15 +33,11 @@ ll calc_substrings(const vector<ll> & suff , const vector<ll> & lcp) {
 int main() {
     ios::sync_with_stdio(false);
     string str;
-    vector<ll> suff_array;
-    cin >> str;
-    SAInducedSort::sort(str,suff_array);
-    if(true) return 0;
     ll k;
     cin >> k >> str;
     string full_str = str + str;
-
-    SAInducedSort::sort(full_str,suff_array);
+    vector<ll> suff_array;
+    
     full_str += 1;
     
     vector<ll> sub_suff(k + 1);
@@ -51,13 +47,15 @@ int main() {
     vector<ll> ans;
     for(ll i = 0; i < str.size(); ++i) {
         substr = full_str.substr(i,k);
+        SAInducedSort::sort(substr,sub_suff);
         substr += 1;
-        find_sub_suff(suff_array, sub_suff, i, i + k);
+        // find_sub_suff(suff_array, sub_suff, i, i + k);
         SAInducedSort::buildLCP(substr, sub_suff, lcp);
         ans.push_back(calc_substrings(sub_suff, lcp));
     }
     for(ll i = 0; i < ans.size(); ++i) {
         cout << ans[i] << " ";
     }
+    cout << endl;
     return 0;
 }

@@ -1,16 +1,69 @@
 //
-//  SAInducedSort.cpp
-//  SAInducedSort
+//  main.cpp
+//  InducedSort
 //
 //  Created by Alex on 16.11.15.
 //  Copyright © 2015 Alex. All rights reserved.
-//
 
-#include "SAInducedSort.hpp"
+#include <iostream>
+#include <vector>
+#include <string>
 #include <cassert>
-
-typedef long long ll;
+#define LONG_MAX 1e4
 using namespace std;
+typedef long long ll;
+
+class SAInducedSort{
+public:
+    static void sort(const std::string & str, std::vector<long long> & suff_array);
+    static void buildLCP(const std::string & str,
+                         const std::vector<long long> & suff_arr,
+                         std::vector<long long> & lcp);
+private:
+
+    class RecursiveSorter {
+    public:
+        RecursiveSorter(const std::vector<long long> & str,
+                        std::vector<long long> & suff_array,
+                        const long long alp_sz);
+        void SAinducedSort();
+    private:
+
+        enum TypeOfSort {
+            LMSsubstrings,
+            InduceSAfromSA1
+        };
+        
+        static const bool L_TYPE = false;
+        static const bool S_TYPE = true;
+
+        const long long alp_size;
+
+        const std::vector<long long> & str;
+        std::vector<long long> & suff_array;
+
+        std::vector<bool> type; // L or S type
+        std::vector<long long> lms_pointers; // positions of all first symb in LMS substrings
+        std::vector<bool> is_lms; //index of head each i-sym bucket
+        std::vector<long long> buckets;
+
+        std::vector<long long> back_map_alp; // to iduce SA from SA
+        // for next recursive step and induce
+        long long next_alp;
+        std::vector<long long> next_str;
+        std::vector<long long> next_suff_array;
+        
+        bool isLmsSubstringEqual(const long long fr, const long long sd);
+        void buildNewStr();
+        bool initType(); // return is each symb unique
+        void initLmsPointers();
+        void initBuckets();
+        void lmsInitForSort(std::vector<long long> bucket_tails);
+        void saInitForSort(std::vector<long long> bucket_tails);
+        void SAsimpleSort();
+        void generalInducedSort(TypeOfSort action);
+    };
+};
 
 void SAInducedSort::RecursiveSorter::initLmsPointers() {
     is_lms.assign(type.size(), false);
@@ -192,8 +245,6 @@ void SAInducedSort::RecursiveSorter::SAinducedSort() {
     initBuckets();
     generalInducedSort(LMSsubstrings);
     
-    next_str.clear();
-    next_suff_array.clear();
     next_str.resize(lms_pointers.size());
     next_suff_array.resize(lms_pointers.size());
     buildNewStr();
@@ -261,9 +312,58 @@ void SAInducedSort::sort(const string & inputStr, vector<ll> & suff_array) {
     for(ll i = 0; i < inputStr.size(); ++i) {
         str[i] = inputStr[i] - shift + 1;
     }
-    
     alp_size -= shift - 2;
 
     RecursiveSorter(str,suff_array,alp_size).SAinducedSort();
+}
+
+
+/**********************************************************************************/
+void find_sub_suff(const vector<ll> & suff_arr, vector<ll> & sub_suff, ll l, ll r) {
+    ll j = 1;
+    sub_suff[0] = sub_suff.size() - 1;
+    for(ll i = 0; i < suff_arr.size(); ++i) {
+        if(suff_arr[i] < r && suff_arr[i] >= l) {
+            sub_suff[j++] = suff_arr[i] - l;
+        }
+    }
+}
+
+ll calc_substrings(const vector<ll> & suff , const vector<ll> & lcp) {
+    ll ans = 0;
+    for(int i = 1; i < (ll)suff.size(); ++i) {
+        ans += ((ll)suff.size() - 1 - suff[i]) - lcp[i-1];
+    }
+    return ans;
+}
+
+int main() {
+    ios::sync_with_stdio(false);
+    string str;
+    ll k;
+    cin >> k >> str;
+    string full_str = str + str;
+    vector<ll> suff_array;
+    
+    full_str += 1;
+    
+    vector<ll> sub_suff(k + 1);
+    vector<ll> lcp(k + 1);
+    string substr;
+    substr.reserve(k + 1);
+    vector<ll> ans;
+    for(ll i = 0; i < str.size(); ++i) {
+        substr = full_str.substr(i,k);
+        SAInducedSort::sort(substr,sub_suff);
+        substr += 1;
+        // find_sub_suff(suff_array, sub_suff, i, i + k);
+        SAInducedSort::buildLCP(substr, sub_suff, lcp);
+        ans.push_back(calc_substrings(sub_suff, lcp));
+    }
+    for(ll i = 0; i < ans.size(); ++i) {
+        cout << ans[i] << " ";
+    }
+    cout << endl;
+    return 0;
 }
 
