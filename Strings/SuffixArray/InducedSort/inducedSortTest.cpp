@@ -336,34 +336,68 @@ ll calc_substrings(const vector<ll> & suff , const vector<ll> & lcp) {
     }
     return ans;
 }
+#include <fstream>
+#include <time.h>
+void make_test() {
+	ofstream cout("test_in.txt");
+	srand(time(NULL));
+	for(int i = 0; i< 20; ++i) {
+		int length = rand()%200000 + 1;
+		for(int j = 0; j < length; ++j) {
+			cout << (char)((rand()%26) + 'a');
+		}
+		cout << endl;
+	}
+	cout.close();
+}
 
+
+string str;
+vector<ll> suff_array;
+vector<ll> lcp;
 int main() {
-    ios::sync_with_stdio(false);
-    string str;
-    ll k;
-    cin >> k >> str;
-    string full_str = str + str;
-    vector<ll> suff_array;
-    
-    full_str += 1;
-    
-    vector<ll> sub_suff(k + 1);
-    vector<ll> lcp(k + 1);
-    string substr;
-    substr.reserve(k + 1);
-    vector<ll> ans;
-    for(ll i = 0; i < str.size(); ++i) {
-        substr = full_str.substr(i,k);
-        SAInducedSort::sort(substr,sub_suff);
-        substr += 1;
-        // find_sub_suff(suff_array, sub_suff, i, i + k);
-        SAInducedSort::buildLCP(substr, sub_suff, lcp);
-        ans.push_back(calc_substrings(sub_suff, lcp));
-    }
-    for(ll i = 0; i < ans.size(); ++i) {
-        cout << ans[i] << " ";
-    }
-    cout << endl;
+   
+    cin >> str;
+   
+    SAInducedSort::sort(str,suff_array);
+    str.push_back(1);
+    lcp.resize(str.size());
+    SAInducedSort::buildLCP(str, suff_array, lcp);
+    cout << calc_substrings(suff_array, lcp) << endl;
     return 0;
 }
+
+// int main() {
+//     ios::sync_with_stdio(false);
+// 	
+//     for(int i = 0; i< 200; ++i) {
+    
+//     string str;
+//     ll k;
+//     cin >> k >> str;
+//     string full_str = str + str;
+//     vector<ll> suff_array;
+    
+//     full_str += 1;
+    
+//     vector<ll> sub_suff(k + 1);
+//     vector<ll> lcp(k + 1);
+//     string substr;
+//     substr.reserve(k + 1);
+//     vector<ll> ans;
+//     for(ll i = 0; i < str.size(); ++i) {
+//         substr = full_str.substr(i,k);
+//         SAInducedSort::sort(substr,sub_suff);
+//         substr += 1;
+//         // find_sub_suff(suff_array, sub_suff, i, i + k);
+//         SAInducedSort::buildLCP(substr, sub_suff, lcp);
+//         ans.push_back(calc_substrings(sub_suff, lcp));
+//     }
+//     for(ll i = 0; i < ans.size(); ++i) {
+//         cout << ans[i] << " ";
+//     }
+//     cout << endl;
+//     return 0;
+// }
+
 
