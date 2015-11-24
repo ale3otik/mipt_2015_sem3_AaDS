@@ -6,7 +6,7 @@
 #include <memory.h>
 
 using namespace std;
-typedef int ll;
+typedef long long ll;
 
 class SuffixTree {
 public:
@@ -72,7 +72,7 @@ str(source_str),
 first_empty(1),
 last_node(1),
 edge_offset(0)
-{}
+{}  
 
 /*create dummy node and root of tree*/
 inline void SuffixTree::SuffixTreeBuilder::createBaseForTree() {
