@@ -7,7 +7,7 @@
 
 using namespace std;
 typedef long long ll;
-
+#define RESERVE 2010
 class SuffixTree {
 public:
     const static int ALP_SIZE = 28; // MAX alp size that timus ate
@@ -53,6 +53,7 @@ private:
 /**********************************************************************************************/
 SuffixTree::SuffixTree(const std::string & source_str):
 end_text_ind((int)(-1)) {
+    nodes.reserve(RESERVE);
     SuffixTreeBuilder(this,source_str).buildTree();
 }
 
@@ -228,7 +229,27 @@ void SuffixTree::SuffixTreeBuilder::buildTree() {
     }
 }
 
-/*************************************************************/
+/************************informatics test*************************************/
+// int main() {
+//     std::ios::sync_with_stdio(false);
+//     //freopen("input.txt", "r", stdin);
+//     string s;
+//     cin >> s;
+
+//     for(size_t i = 0;i < s.size(); ++i) {
+//         s[i] -= ('a' - 1);
+//     }
+
+//     SuffixTree tree(s);
+//     ll ans = 0;
+//   for(int i = 2; i < tree.nodes.size(); ++i) {
+//         ans += tree.getEdgeLength(i);
+//     }
+//     cout << ans;
+//     // test();
+//     return 0;
+// }
+
 int main() {
     ios::sync_with_stdio(false);
     
