@@ -11,6 +11,7 @@
 #include <string>
 #include <cassert>
 #include <stdlib.h>
+#include <memory.h>
 
 using namespace std;
 
