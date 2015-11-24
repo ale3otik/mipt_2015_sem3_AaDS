@@ -11,10 +11,8 @@
 #include <string>
 #include <cassert>
 #include <stdlib.h>
-#include <iostream>
 
 using namespace std;
-
 
 SuffixTree::SuffixTree(const std::string & source_str):
 end_text_ind((int)(-1)) {
