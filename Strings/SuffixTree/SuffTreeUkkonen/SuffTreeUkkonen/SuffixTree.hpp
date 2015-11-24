@@ -12,9 +12,11 @@
 #include <string>
 class SuffixTree {
 public:
+    const static int ALP_SIZE = 28;
+    
     class Node {
     public:
-        std::vector<long long> children;
+        long long children[ALP_SIZE];
         size_t suff_link;
 
         size_t p_ind;
@@ -26,8 +28,6 @@ public:
     };
 
     std::vector<Node> nodes;
-    
-    const static int ALP_SIZE = 128;
     
     SuffixTree(const std::string & source_str);
     
