@@ -30,12 +30,7 @@ int main() {
         substr = full_str.substr(j,k);
         SuffixTree tree(substr);
         for(int i = 2; i < tree.nodes.size(); ++i) {
-            SuffixTree::Node & cur = tree.nodes[i];
-            int l,r;
-            if(cur.is_leaf) r = (int)substr.size()-1;
-            else r = (int)cur.s_pos + (int)cur.p_edge_len - 1;
-            l = (int)cur.s_pos;
-            ans[j] += r - l + 1;
+            ans[j] += tree.getEdgeLength(i);
         }
     }
     

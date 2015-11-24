@@ -12,48 +12,43 @@
 #include <string>
 class SuffixTree {
 public:
-    const static int ALP_SIZE = 28;
-    
+    const static int ALP_SIZE = 28; // the smallest to optimze time
     class Node {
     public:
-        long long children[ALP_SIZE];
-        size_t suff_link;
+        int children[ALP_SIZE];
+        int suff_link;
 
-        size_t p_ind;
-        size_t s_pos;
+        int p_ind;
+        int s_pos;
 
         bool is_leaf;
-        long long p_edge_len; // if no leaf
-        size_t * end_text_ind_ptr; // right index of leaf's parent edge
+        int p_edge_len; // if no leaf
     };
-
+    
     std::vector<Node> nodes;
-    
-    SuffixTree(const std::string & source_str);
-    
+    SuffixTree(const std::string & source_str); // build tree
+    int getEdgeLength(int ind);
+
+    int end_text_ind;
 private:
     class SuffixTreeBuilder{
     public:
         SuffixTreeBuilder(SuffixTree * tree, const std::string & source_str);
         void buildTree();
     private:
-        const char spec_symb = 1;
         SuffixTree * tree;
         const std::string str;
-
-        size_t end_text_ind;
-        size_t first_empty;
-        size_t last_node; // need update suff link
-        long long edge_offset;
         
-        void createBaseForTree();
+        int first_empty; // first empty action position
+        int last_node; // need update suff link
+        int edge_offset;
+        
+        void createBaseForTree(); // create root and dummy
         void addNextSymb(char symb);
-        Node & makeNode(size_t child_ind,long long offset,char next_char);
-        Node & makeLeaf(size_t parent, char symb);
-        char getChar(size_t ind, long long offset);
-        long long getEdgeLength(size_t ind);
-        size_t findRelativeOffset(size_t p_ind, size_t start);
-        
+        Node & makeNode(int child_ind,int offset,char next_char); // no leaf
+        Node & makeLeaf(int parent, char symb);
+        char getChar(int ind, int offset);
+        int findRelativeOffset(int p_ind, int start); // find edge that need to test
     };
 };
 #endif /* SuffixTree_hpp */
