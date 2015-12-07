@@ -23,20 +23,20 @@ ui64 BlockPreflowMKM::getValueOfMaxFlow() const{
     return network_.getMaxFlow();
 }
 
-void BlockPreflowMKM::countValueOfMaxFlow_()
-{
+void BlockPreflowMKM::countValueOfMaxFlow_() {
     network_.setMaxFlow(network_.countCurrentFlow(start_));
 }
 
 /***************************************************/
 
-void BlockPreflowMKM::makeLvlNet_(const vector<size_t> & dist) {
+void BlockPreflowMKM::makeLvlNet_(const vector<ui64> & dist) {
     lvl_net_ = Network(network_.getNetworkSizeV());
     out_edge_pointer_ = vector<size_t>(network_.getNetworkSizeV(),0);
     in_edge_pointer_ = vector<size_t>(network_.getNetworkSizeV(),0);
     is_deleted_vertex_ = vector<bool>(network_.getNetworkSizeV(),false);
     associated_.resize(0);
     excess_ = vector<ui64>(network_.getNetworkSizeV(),0);
+    ui64 new_edges_size = 0;
     for(size_t v = 0; v < network_.getNetworkSizeV(); ++v)
     {
         const vector<size_t> & outgoing = network_.getOutgoingEdges(v);
@@ -44,260 +44,129 @@ void BlockPreflowMKM::makeLvlNet_(const vector<size_t> & dist) {
             const Edge & e_cur = network_.Graph::getEdge(outgoing[e]);
             
             if(dist[e_cur.to] == dist[v] + 1 && dist[e_cur.to] <= dist[finish_] && network_.getAllowedCapacity(e) > 0 ) {
-                lvl_net_.addNewEdge(Edge(e_cur.from,e_cur.to, network_.getAllowedCapacity(e)));
-                
-            }
-        }
-        
-        while(e_it != v_last.incoming.end())
-        {
-            Edge e_cur = network.edges[*e_it];
-            if(!is_incoming)
-            {
-//                if(bfs_info[e_cur.to] == bfs_info[i] + 1 && bfs_info[e_cur.to] <= bfs_info[finish] && e_cur.capacity > network.flow[*e_it])
-                {
-                    lvl_net.edges.push_back(Edge(i,e_cur.to, e_cur.capacity - network.flow[*e_it]));
-                    lvl_net.vertex[i].outgoing.push_back((int)lvl_net.edges.size() - 1);
-                    associated.push_back(*e_it); // remember index of new edge in base network
-                    
-                    lvl_net.vertex[e_cur.to].incoming.push_back((int)lvl_net.edges.size() - 1);
-                }
-            }
-            else
-            {
-                if(bfs_info[e_cur.from] == bfs_info[i] + 1 && bfs_info[e_cur.from] <= bfs_info[finish]&& network.flow[*e_it] > 0)
-                {
-                    lvl_net.edges.push_back(Edge(i,e_cur.from,network.flow[*e_it]));
-                    lvl_net.vertex[i].outgoing.push_back((int)lvl_net.edges.size() - 1);
-                    associated.push_back(*e_it);
-                    
-                    lvl_net.vertex[e_cur.from].incoming.push_back((int)lvl_net.edges.size() - 1);
-                }
-            }
-            
-            ++e_it;
-            if(!is_incoming && e_it == v_last.outgoing.end())
-            {
-                e_it = v_last.incoming.begin();
-                is_incoming = true;
+                lvl_net_.createNewEdgeFromNetwork(e, network_);
+                associated_.push_back(e);
+                associated_.push_back(0); // to save numeration with back edges
+                ++new_edges_size;
             }
         }
     }
-    lvl_net.flow = vector<int>(lvl_net.edges.size(),0);
-    is_deleted_edge = vector<bool>(lvl_net.edges.size(),false);
+    is_deleted_edge_ = vector<bool>(new_edges_size,false);
 }
 
-void BlockPreflowMKM::initPotential_()
-{
-    potential_in = vector<long long>(network.vertex.size(),0);
-    potential_out = vector<long long>(network.vertex.size(),0);
+void BlockPreflowMKM::initPotential_() {
+    potential_in_ = vector<ui64>(network_.getNetworkSizeV(),0);
+    potential_out_ = vector<ui64>(network_.getNetworkSizeV(),0);
     
-    for(int i = 0 ;i < lvl_net.vertex.size(); ++i)
+    for(int v = 0 ; v < lvl_net_.getNetworkSizeV(); ++v)
     {
-        for(int j = 0; j < lvl_net.vertex[i].incoming.size(); ++j )
+        const vector<size_t> & outgoing = lvl_net_.getOutgoingEdges(v);
+        for(int e = 0; e < outgoing.size(); ++ e)
         {
-            potential_in[i] += lvl_net.edges[lvl_net.vertex[i].incoming[j]].capacity;
-        }
-        for(int j = 0; j < lvl_net.vertex[i].outgoing.size(); ++j)
-        {
-            potential_out[i] += lvl_net.edges[lvl_net.vertex[i].outgoing[j]].capacity;
+            potential_in_[v] += lvl_net_.getAllowedCapacity(e);
+            potential_out_[v] += lvl_net_.getAllowedCapacity(lvl_net_.backEdge(e));
         }
     }
 }
 
-void BlockPreflowMKM::dfsDeleteEmptyNodes_(size_t s)
-{
-    if(is_deleted_vertex[s] || s == start || s == finish) return;
+void BlockPreflowMKM::bfsDeleteEmptyNodes_(size_t s) {
     
-    queue<int> next_deleted;
-    for(int i = out_edge_pointer[s]; i < lvl_net.vertex[s].outgoing.size();++i)
-    {
-        int e_ind = lvl_net.vertex[s].outgoing[i];
-        int to = lvl_net.edges[e_ind].to;
-        
-        if(!is_deleted_edge[e_ind])
-        {
-            potential_in[to] -= (lvl_net.edges[e_ind].capacity - lvl_net.flow[e_ind]);
-            potential_out[s] -= (lvl_net.edges[e_ind].capacity - lvl_net.flow[e_ind]);
-            if(!is_deleted_vertex[to] && std::min(potential_in[to],potential_out[to]) == 0)
-            {
-                if(to != finish) next_deleted.push(to);
-            }
-        }
-        
-        is_deleted_edge[e_ind] = true;
-    }
-    
-    for(int i = in_edge_pointer[s]; i < lvl_net.vertex[s].incoming.size();++i)
-    {
-        int e_ind = lvl_net.vertex[s].incoming[i];
-        int from = lvl_net.edges[e_ind].from;
-        if(!is_deleted_edge[e_ind])
-        {
-            potential_out[from] -= (lvl_net.edges[e_ind].capacity - lvl_net.flow[e_ind]);
-            potential_in[s] -= lvl_net.edges[e_ind].capacity - lvl_net.flow[e_ind];
-            if(!is_deleted_vertex[from] && std::min(potential_in[from],potential_out[from]) == 0)
-            {
-               if(from != start) next_deleted.push(from);
-            }
-        }
-        
-        is_deleted_edge[e_ind] = true;
-    }
-    
-    is_deleted_vertex[s] = true;
-    
-    while (!next_deleted.empty())
-    {
-        dfsDeleteEmptyNodes(next_deleted.front());
+    queue<size_t> next_deleted;
+    next_deleted.push(s);
+    while (!next_deleted.empty()) {
+        s = next_deleted.front();
         next_deleted.pop();
-    }
-}
-
-void BlockPreflowMKM::pushFlowForward_(size_t s)
-{
-    if(s == finish) return;
-    
-    Vertex cur_v = lvl_net.vertex[s];
-    queue<int> next_vertices;
-
-    // to fin
-    while(excess[s] > 0 && out_edge_pointer[s] < cur_v.outgoing.size())
-    {
-        int e_ind = lvl_net.vertex[s].outgoing[out_edge_pointer[s]];
-        if(is_deleted_edge[e_ind])
-        {
-            ++ out_edge_pointer[s];
-            continue;
-        }
         
-        Edge cur_e = lvl_net.edges[e_ind];
-        if(cur_e.capacity - lvl_net.flow[e_ind] > excess[s])
-        {
-            potential_out[s] -= excess[s];
-            potential_in[cur_e.to] -= excess[s];
-           
-            excess[cur_e.to] += excess[s];
-            lvl_net.flow[e_ind] += excess[s];
-            excess[s] = 0;
-            
-            next_vertices.push(cur_e.to);
-            break;
-        }
-        else
-        {
-            potential_out[s] -= cur_e.capacity - lvl_net.flow[e_ind];
-            potential_in[cur_e.to] -= cur_e.capacity - lvl_net.flow[e_ind];
-         
-            excess[cur_e.to] += cur_e.capacity - lvl_net.flow[e_ind];
-            excess[s] -= cur_e.capacity - lvl_net.flow[e_ind];
-            
-            lvl_net.flow[e_ind] = cur_e.capacity;
-            
-            is_deleted_edge[e_ind] = true;
-            next_vertices.push(cur_e.to);
-            ++out_edge_pointer[s];
-        }
-    }
-    assert(excess[s] == 0);
-    
-    if(std::min(potential_in[s],potential_out[s]) == 0)
-    {
-        null_potential.push_back(s);
-    }
-    
-    while (!next_vertices.empty())
-    {
-        pushFlowForward(next_vertices.front());
-        next_vertices.pop();
-    }
-}
-
-void BlockPreflowMKM::pushFlowBack_(size_t s)
-{
-    
-    if(s == start) return;
-    
-    Vertex cur_v = lvl_net.vertex[s];
-    queue<int> next_vertices;
-    
-    // to start
-    while(excess[s] > 0 && in_edge_pointer[s] < cur_v.incoming.size())
-    {
-        int e_ind = lvl_net.vertex[s].incoming[in_edge_pointer[s]];
-        if(is_deleted_edge[e_ind])
-        {
-            ++ in_edge_pointer[s];
-            continue;
-        }
+        if(is_deleted_vertex_[s] || s == start_ || s == finish_) continue;
         
-        Edge cur_e = lvl_net.edges[e_ind];
-        if(cur_e.capacity - lvl_net.flow[e_ind] > excess[s])
-        {
-            potential_in[s] -= excess[s];
-            potential_out[cur_e.from] -= excess[s];
-            
-            excess[cur_e.from] += excess[s];
-            lvl_net.flow[e_ind] += excess[s];
-            excess[s] = 0;
-            
-            next_vertices.push(cur_e.from);
-            break;
-        }
-        else
-        {
+        const vector<size_t> & outgoing = lvl_net_.getOutgoingEdges(s);
 
-            potential_in[s] -= cur_e.capacity - lvl_net.flow[e_ind];
-            potential_out[cur_e.from] -= cur_e.capacity - lvl_net.flow[e_ind];
+        size_t i = std::min(out_edge_pointer_[s],in_edge_pointer_[s]);
+        for(; i < outgoing.size(); ++ i) {
 
-            excess[cur_e.from] += cur_e.capacity - lvl_net.flow[e_ind];
-            excess[s] -= cur_e.capacity - lvl_net.flow[e_ind];
-            
-            lvl_net.flow[e_ind] = cur_e.capacity;
-            
-            is_deleted_edge[e_ind] = true;
-            next_vertices.push(cur_e.from);
-            ++in_edge_pointer[s];
+            size_t e_ind = outgoing[i];
+            const Edge & e = lvl_net_.getEdge(e_ind);
+        
+            if(!is_deleted_edge_[e_ind]) {
+                potential_in_[e.to] -= lvl_net_.getAllowedCapacity(e_ind);
+                potential_out_[e.to] -= lvl_net_.getAllowedCapacity(lvl_net_.backEdge(e_ind));
+            }
+            is_deleted_edge_[e_ind] = true;
+            is_deleted_edge_[lvl_net_.backEdge(e_ind)] = true;
         }
-    }
-    
-    assert(excess[s] == 0);
-    
-    if(std::min(potential_in[s],potential_out[s]) == 0)
-    {
-        null_potential.push_back(s);
-    }
-    
-    while (!next_vertices.empty())
-    {
-        pushFlowBack(next_vertices.front());
-        next_vertices.pop();
+        is_deleted_vertex_[s] = true;
     }
 }
+
+void BlockPreflowMKM::pushFlow_(size_t s, bool push_back)
+{
+    queue<size_t> next_vertices;
+    next_vertices.push(s);
+    while(!next_vertices.empty())
+    {
+        s = next_vertices.front();
+        next_vertices.pop();
+        if((s == finish_ && !push_back) || (s == start_ && push_back)) continue;
+        const vector<size_t> & outgoing = lvl_net_.getOutgoingEdges(s);
+
+        vector<size_t> & edge_pointer = push_back ? in_edge_pointer_ : out_edge_pointer_;
+    
+        // to fin
+        while(excess_[s] > 0 && edge_pointer[s] < outgoing.size())
+        {
+            if(lvl_net_.isBackEdge(outgoing[edge_pointer[s]]) ^ push_back) {
+                ++ edge_pointer[s];
+                continue;
+            }
+        
+            size_t e_ind = push_back ? lvl_net_.backEdge(outgoing[edge_pointer[s]]) : outgoing[edge_pointer[s]];
+            if(is_deleted_edge_[e_ind]){
+                ++ edge_pointer[s];
+                continue;
+            }
+        
+            ui64 pushed = lvl_net_.pushFlow(e_ind, excess_[s]);
+            size_t exc_to = push_back ? lvl_net_.getEdge(e_ind).from : lvl_net_.getEdge(e_ind).to;
+            excess_[s] -= pushed;
+            excess_[exc_to] += pushed;
+            potential_out_[lvl_net_.getEdge(e_ind).from] -= pushed;
+            potential_in_[lvl_net_.getEdge(e_ind).to] += pushed;
+            next_vertices.push(lvl_net_.getEdge(e_ind).to);
+            if(excess_[s] == 0) break;
+            else ++edge_pointer[s];
+    
+            if(std::min(potential_in_[s],potential_out_[s]) == 0)
+            {
+                null_potential_.push_back(s);
+            }
+    
+        }
+    }
+}
+
 
 void BlockPreflowMKM::findMaxFlow(size_t s, size_t t)
 {
-    start = s;
-    finish = t;
+    start_ = s;
+    finish_ = t;
     
     while(true) // main cycle
     {
-        vector<int> bfs_info; // dist
-        network.bfs(start, bfs_info);
+        vector<ui64> dist;
+        network_.countDist(start_, dist);
         
-        if(bfs_info[finish] == -1) break;
+        if(dist[finish_] == INF) break;
         
-        makeLvlNet(bfs_info);
-     
-        initPotential();
-        potential_in[start] = MAX_LONG;
-        potential_out[finish] = MAX_LONG;
+        makeLvlNet_(dist);
+        initPotential_();
         
-        for(int i = 0 ; i < lvl_net.vertex.size(); ++i)
-        {
-            if(std::min(potential_out[i],potential_in[i]) == 0)
-            {
-                dfsDeleteEmptyNodes(i);
+        potential_in_[start_] = INF;
+        potential_out_[finish_] = INF;
+        null_potential_.reserve(lvl_net_.getNetworkSizeV());
+        
+        for(size_t i = 0 ; i < lvl_net_.getNetworkSizeV(); ++i) {
+            if(std::min(potential_out_[i],potential_in_[i]) == 0) {
+                bfsDeleteEmptyNodes_(i);
             }
         }
         
@@ -306,56 +175,43 @@ void BlockPreflowMKM::findMaxFlow(size_t s, size_t t)
         {
             //find min potential
             
-            null_potential.resize(0);
+            null_potential_.resize(0);
             
-            long long min_potential = MAX_LONG;
-            int min_ind = -1;
-            for(int i = 0; i < lvl_net.vertex.size(); ++i)
+            ui64 min_potential = INF;
+            size_t min_ind = start_;
+            for(size_t i = 0; i < lvl_net_.getNetworkSizeV(); ++i)
             {
-                if(is_deleted_vertex[i] || i == finish) continue;
+                if(is_deleted_vertex_[i] || i == finish_) continue;
             
-                if(min_potential > std::min(potential_out[i],potential_in[i]))
+                if(min_potential > std::min(potential_out_[i],potential_in_[i]))
                 {
-                    min_potential = std::min(potential_out[i],potential_in[i]);
+                    min_potential = std::min(potential_out_[i],potential_in_[i]);
                     min_ind = i;
                 }
             }
-            if(min_potential == MAX_LONG || min_potential == 0) break;
+            if(min_potential == INF || min_potential == 0) break;
             
-            excess[min_ind] = min_potential;
-            if(excess[min_ind] > std::min(potential_out[min_ind],potential_in[min_ind]))
-            {
-                assert(0);
-            }
-            
-            pushFlowForward(min_ind);
+            excess_[min_ind] = min_potential;
+            assert(excess_[min_ind] <= std::min(potential_out_[min_ind],potential_in_[min_ind]));
+            pushFlow_(min_ind,false);
 
-            excess[min_ind] = min_potential;
-            pushFlowBack(min_ind);
+            excess_[min_ind] = min_potential;
+            pushFlow_(min_ind,true);
             
-            for(int i = 0 ; i < null_potential.size(); ++i)
-            {
-                if(!is_deleted_vertex[null_potential[i]])
-                {
-                    dfsDeleteEmptyNodes(null_potential[i]);
+            for(size_t i = 0 ; i < null_potential_.size(); ++i) {
+                if(!is_deleted_vertex_[null_potential_[i]]) {
+                    bfsDeleteEmptyNodes_(null_potential_[i]);
                 }
             }
         }
+
         // add new flow to the base network
-        for(int i = 0; i < lvl_net.edges.size(); ++i)
+        for(size_t i = 0; i < lvl_net_.getNetworkSizeE(); ++i)
         {
-            Edge associated_edge = network.edges[associated[i]];
-            Edge cur_edge = lvl_net.edges[i];
-            if(cur_edge.from == associated_edge.from)
-            {
-                network.flow[associated[i]] += lvl_net.flow[i];
-            }
-            else
-            {
-                network.flow[associated[i]] -= lvl_net.flow[i];
-            }
+            if(lvl_net_.isBackEdge(i)) continue;
+            network_.pushFlow(associated_[i], lvl_net_.getEdgeFlow(i));
         }
     }
-    countValueOfMaxFlow();
+    countValueOfMaxFlow_();
 }
 

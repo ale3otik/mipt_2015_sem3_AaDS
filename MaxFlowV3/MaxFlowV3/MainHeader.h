@@ -67,15 +67,20 @@ public:
     
     unsigned long long getEdgeFlow(size_t e_ind) const;
     void setEdgeFlow(size_t e_ind, unsigned long long new_flow);
-    unsigned long long pushFlow(size_t ind, unsigned long long value); // return excess
+    unsigned long long pushFlow(size_t ind, unsigned long long value); // return value of pushed flow
     void setFlow(size_t ind, unsigned long long value);
     unsigned long long getAllowedCapacity(size_t ind) const;
     size_t backEdge(size_t ind) const;
     
     size_t getNetworkSizeV() const;
+    size_t getNetworkSizeE() const;
     const std::vector<size_t> & getOutgoingEdges(size_t v_ind) const;
     const Edge & getEdge(size_t e_ind) const;
     size_t createNewEdgeFromNetwork(size_t e_ind, const Network & net);
+    
+    bool isBackEdge(size_t e_ind) const;
+    
+    void countDist(size_t start, std::vector<unsigned long long> & dist) const;
 private:
     std::vector <unsigned long long> flow_; // flow on edges
     long long max_flow_; // value of max flow
@@ -136,11 +141,10 @@ private:
     size_t start_;
     size_t finish_;
     
-    void makeLvlNet_(const std::vector <size_t> & dist);
+    void makeLvlNet_(const std::vector <unsigned long long> & dist);
     void initPotential_();
-    void dfsDeleteEmptyNodes_(size_t i);
-    void pushFlowForward_(size_t s);
-    void pushFlowBack_(size_t s);
+    void bfsDeleteEmptyNodes_(size_t i);
+    void pushFlow_(size_t s, bool push_back);
     void countValueOfMaxFlow_();
 };
 

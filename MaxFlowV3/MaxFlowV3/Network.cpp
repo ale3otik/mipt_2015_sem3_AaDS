@@ -43,32 +43,46 @@ max_flow_(0) {
 inline const std::vector<size_t> & Network::getOutgoingEdges(size_t v_ind) const {
     return vertex_[v_ind].outgoing;
 }
-
 inline const Edge & Network::getEdge(size_t e_ind) const {
     return edges_[e_ind];
 }
-
 inline size_t Network::getNetworkSizeV() const {
     return vertex_.size();
 }
-
+inline size_t Network::getNetworkSizeE() const {
+    return edges_.size();
+}
 inline size_t Network::backEdge(size_t ind) const {
     return back_edge_ind_[ind];
 }
-
 inline ui64 Network::getEdgeFlow(size_t ind) const {
     if(!is_back_edge_[ind]) return flow_[ind];
     ind = backEdge(ind);
     return edges_[ind].capacity - flow_[ind];
 }
+inline bool Network::isBackEdge(size_t e_ind) const {
+    return is_back_edge_[e_ind];
+}
+
 
 size_t Network::createNewEdgeFromNetwork(size_t e_ind, const Network & net) {
     const Edge parent_edge = net.getEdge(e_ind);
     Edge newEdge(parent_edge.from,parent_edge.to,net.getAllowedCapacity(e_ind));
+    Edge newBackEdge(parent_edge.to,parent_edge.from,0);
     
-    size_t ind = addNewEdge(newEdge);
-    is_back_edge_.push_back(net.is_back_edge_[e_ind])
+    size_t indr = addNewEdge(newEdge);
+    size_t indb = addNewEdge(newBackEdge);
+    is_back_edge_.push_back(false);
+    is_back_edge_.push_back(true);
+    back_edge_ind_.push_back(indb);
+    back_edge_ind_.push_back(indr);
+    vertex_[parent_edge.from].outgoing.push_back(indr);
+    vertex_[parent_edge.to].outgoing.push_back(indb);
+    flow_.push_back(0);
+    flow_.push_back(0);
+    return indr;
 }
+
 inline unsigned long long Network::pushFlow(size_t ind, ui64 value) {
     Edge cur;
     ui64 excess;
@@ -83,7 +97,7 @@ inline unsigned long long Network::pushFlow(size_t ind, ui64 value) {
         excess = (value > cur.capacity - flow_[ind]) ? (value - (cur.capacity - flow_[ind])) : 0;
         flow_[ind] += value - excess;
     }
-    return excess;
+    return value - excess;
 }
 
 void Network::setFlow(size_t ind, unsigned long long value) {
@@ -106,6 +120,10 @@ unsigned long long Network::countCurrentFlow(size_t s) const {
         }
     }
     return cur_flow;
+}
+
+void Network::countDist(size_t start, std::vector<ui64> & dist) const {
+    bfs_(start, dist);
 }
 
 void Network::bfs_(size_t start, vector<ui64> & dist) const {
