@@ -5,170 +5,107 @@
 //  Created by Alex on 12.10.15.
 //  Copyright © 2015 Alex. All rights reserved.
 //
+
 #include "MainHeader.h"
+using std::vector;
+typedef unsigned long long ui64;
 
 SimpleForAlg::SimpleForAlg(Graph graph):
-network(graph){}
+network_(graph),
+cur_edge_to_discharge_(network_.getNetworkSizeV(),0){}
 
-long long SimpleForAlg::getValueOfMaxFlow() const
-{
-    return network.max_flow;
-}
-Network SimpleForAlg::returnNetwork() const
-{
-    return network;
+ui64 SimpleForAlg::getValueOfMaxFlow() const {
+    return network_.getMaxFlow();
 }
 
-void SimpleForAlg::countValueOfMaxFlow()
-{
-    network.max_flow = 0;
-    for(int i = 0; i < network.vertex[start].outgoing.size(); ++i)
-    {
-        network.max_flow += network.flow[network.vertex[start].outgoing[i]];
-    }
-    for(int i = 0; i < network.vertex[start].incoming.size(); ++i)
-    {
-        network.max_flow -= network.flow[network.vertex[start].incoming[i]];
-    }
+const Network & SimpleForAlg::returnNetwork() const {
+    return network_;
 }
 
-void SimpleForAlg::findMaxFlow(int st, int fin)
+void SimpleForAlg::setValueOfMaxFlow_() {
+    network_.setMaxFlow(network_.countCurrentFlow(start_));
+}
+
+void SimpleForAlg::findMaxFlow(size_t st, size_t fin)
 {
-    start = st;
-    finish = fin;
-    height.resize(network.vertex.size());
-    excess.resize(network.vertex.size());
+    start_ = st;
+    finish_ = fin;
+
+    height_.resize(network_.getNetworkSizeV());
+    excess_.resize(network_.getNetworkSizeV());
     
-    for (int v = 0; v < network.vertex.size(); ++v)
+    for (size_t i = 0; i < network_.getNetworkSizeV(); ++i)
     {
-        height[v] = 0;
-        excess[v] = 0;
+        height_[i] = 0;
+        excess_[i] = 0;
     }
-    height[start] = (int)network.vertex.size();
+    height_[start_] = network_.getNetworkSizeV();
     
     //start init
-    for(int i = 0 ; i < network.vertex[start].outgoing.size(); ++i)
+    const vector<size_t> & outgoing = network_.getOutgoingEdges(start_);
+    for(size_t i = 0 ; i < outgoing.size(); ++i)
     {
-        int e_ind = network.vertex[start].outgoing[i];
-        Edge cur_edge = network.edges[e_ind];
-        
-        excess[cur_edge.to] += cur_edge.capacity;
-        network.flow[e_ind] = cur_edge.capacity;
+        size_t e_ind = outgoing[i];
+        const Edge & cur_edge = network_.getEdge(e_ind);
+        excess_[cur_edge.to] += cur_edge.capacity;
+        network_.setEdgeFlow(e_ind, cur_edge.capacity);
     }
-    excess[finish] = 0;
-    excess[start] = 0;
+    excess_[finish_] = 0;
+    excess_[start_] = 0;
 
     bool is_updated = true;
-    while (is_updated)
-    {
+    while (is_updated) {
         is_updated = false;
-        for (int v_ind = 0; v_ind < network.vertex.size(); ++v_ind)
-        {
-            if(excess[v_ind] > 0)
-            {
+        for (int v_ind = 0; v_ind < network_.getNetworkSizeV(); ++v_ind) {
+            if(excess_[v_ind] > 0) {
                 is_updated = true;
-                discharge(v_ind);
+                discharge_(v_ind);
             }
         }
     }
-    
-    countValueOfMaxFlow();
+    setValueOfMaxFlow_();
 }
 
-void SimpleForAlg::discharge(int v_ind)
+void SimpleForAlg::discharge_(size_t v_ind)
 {
-    bool is_incoming = false;
-    vector<int>::iterator current = network.vertex[v_ind].outgoing.begin();
-    while(excess[v_ind] > 0)
-    {
-        if(current == network.vertex[v_ind].outgoing.end())
-        {
-            current = network.vertex[v_ind].incoming.begin();
-            is_incoming = true;
-        }
-        
-        if(current == network.vertex[v_ind].incoming.end())
-        {
-            current = current = network.vertex[v_ind].outgoing.begin();
-            is_incoming = false;
-            relabel(v_ind);
+    size_t e_ind = cur_edge_to_discharge_[v_ind]; // to continue with last point
+    const vector<size_t> & outgoing = network_.getOutgoingEdges(v_ind);
+    while(excess_[v_ind] > 0) {
+        if(e_ind + 1 == outgoing.size()){
+            relabel_(v_ind);
+            e_ind = 0;
             continue;
         }
         
-        int from, to , allowed_flow;
-        
-        if(!is_incoming)
-        {
-            to = network.edges[(*current)].to;
-            from = network.edges[(*current)].from;
-            allowed_flow = network.edges[(*current)].capacity - network.flow[(*current)];
+        const Edge & edge = network_.getEdge(e_ind);
+        if(height_[edge.from] == height_[edge.to] + 1 && network_.getAllowedCapacity(e_ind) > 0) {
+            push_(e_ind);
         }
-        else
-        {
-            to = network.edges[(*current)].from;
-            from = network.edges[(*current)].to;
-            allowed_flow = network.flow[(*current)];
-        }
-        
-        if(height[from] == height[to] + 1 && allowed_flow > 0)
-        {
-            push((*current), from);
-        }
-        
-        ++current;
+        ++e_ind;
     }
+    cur_edge_to_discharge_[v_ind] = e_ind;
 }
 
-void SimpleForAlg::push(int e_ind, int from)
-{
-    Edge cur_edge = network.edges[e_ind];
-    int to = cur_edge.to;
-    if(cur_edge.from != from)
-    {
-        to = cur_edge.from;
-    }
-
-    long long allowed_flow;
-    if(from == cur_edge.from)
-    {
-        allowed_flow = min((long long)(cur_edge.capacity - network.flow[e_ind]),excess[from]);
-        network.flow[e_ind] += allowed_flow;
-    }
-    else if(from == cur_edge.to)
-    {
-        allowed_flow =min((long long)(network.flow[e_ind]),excess[from]);
-        network.flow[e_ind] -= allowed_flow;
-    }
-    else {throw exception();}
+void SimpleForAlg::push_(size_t e_ind) {
+    const Edge & cur_edge = network_.getEdge(e_ind);
     
-    excess[to] += allowed_flow;
-    excess[from] -= allowed_flow;
+    ui64 pushed = network_.pushFlow(e_ind, excess_[cur_edge.from]);
+    excess_[cur_edge.to] += pushed;
+    excess_[cur_edge.from] -= pushed;
     
-    if(to == finish || to == start) excess[to] = 0;
+    if(cur_edge.to == finish_ || cur_edge.to == start_) excess_[cur_edge.to] = 0;
 }
 
-void SimpleForAlg::relabel(int v_ind)
-{
-    int min_h = 2 * (int)network.vertex.size() + 3;
-    for(int i = 0; i < network.vertex[v_ind].outgoing.size();++i)
-    {
-        int e_ind = network.vertex[v_ind].outgoing[i];
-        Edge cur_e = network.edges[e_ind];
-        if(cur_e.capacity - network.flow[e_ind] > 0)
-        {
-            if(height[cur_e.to] < min_h) min_h = height[cur_e.to];
+void SimpleForAlg::relabel_(size_t v_ind) {
+    ui64 min_h = 2 * network_.getNetworkSizeV() + 3;
+    const vector<size_t> & outgoing = network_.getOutgoingEdges(v_ind);
+    for(size_t i = 0; i < outgoing.size(); ++i) {
+        size_t e_ind = outgoing[i];
+        const Edge & cur_e = network_.getEdge(e_ind);
+        
+        if(network_.getAllowedCapacity(e_ind) > 0){
+            if(height_[cur_e.to] < min_h) min_h = height_[cur_e.to];
         }
     }
-    
-    for(int i = 0; i < network.vertex[v_ind].incoming.size();++i)
-    {
-        int e_ind = network.vertex[v_ind].incoming[i];
-        Edge cur_e = network.edges[e_ind];
-        if(network.flow[e_ind] > 0)
-        {
-            if(height[cur_e.from] < min_h) min_h = height[cur_e.from];
-        }
-    }
-    
-    height[v_ind] = min_h + 1;
+    height_[v_ind] = min_h + 1;
 }

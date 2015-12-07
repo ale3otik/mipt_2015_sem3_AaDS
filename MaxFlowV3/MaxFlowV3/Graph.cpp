@@ -8,36 +8,41 @@
 
 #include "MainHeader.h"
 #include <vector>
-#include <exception>
+typedef unsigned long long ui64;
+using std::vector;
 
+Edge::Edge(){}
 
-
-Edge::Edge(int from, int to, int capacity)
-{
+Edge::Edge(size_t from, size_t to, ui64 capacity){
     this->from = from;
     this->to = to;
     this->capacity = capacity;
 }
 
 Graph::Graph(){}
-Graph::Graph(int vertex_quantity, vector <Edge> edges )
-{
-    this->edges = edges;
-    vertex.resize(vertex_quantity);
+
+Graph::Graph(size_t vertex_quantity):
+vertex_(vertex_quantity),
+edges_(){}
+
+Graph::Graph(size_t vertex_quantity, const vector <Edge> & edges) {
+    this->edges_ = edges;
+    vertex_.resize(vertex_quantity);
     
-    for (int i = 0; i < edges.size(); ++i)
-    {
-        vertex[edges[i].from].outgoing.push_back(i);
-        vertex[edges[i].to].incoming.push_back(i);
+    for (int i = 0; i < edges.size(); ++i) {
+        vertex_[edges[i].from].outgoing.push_back(i);
     }
 }
 
-Edge Graph::getEdge(int position)
-{
-    return edges[position];
+inline const Edge & Graph::getEdge(size_t pos) const {
+    return edges_[pos];
 }
 
-int Graph::getCapacity(int position)
-{
-    return edges[position].capacity;
+inline ui64 Graph::getCapacity(size_t pos) const {
+    return edges_[pos].capacity;
+}
+
+inline size_t Graph::addNewEdge(const Edge & new_edge) {
+    edges_.push_back(new_edge);
+    return edges_.size() - 1;
 }

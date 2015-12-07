@@ -13,43 +13,41 @@
 #include <queue>
 #include <iostream>
 #include <assert.h>
-using namespace std;
 
+static const long long INF = 1e18;
 /**************************
  * base structures
  */
 class Edge
 {
 public:
-    Edge(int from,int to, int capacity);
+    Edge();
+    Edge(size_t from, size_t to, unsigned long long capacity);
     bool operator < (const Edge & sc) const;
-    int from;
-    int to;
-    int capacity;
+    size_t from;
+    size_t to;
+    unsigned long long capacity;
 };
 
 class Vertex
 {
 public:
-    Vertex():
-    incoming(),
-    outgoing(){}
-    
-    vector<int> incoming;
-    vector<int> outgoing;
+    std::vector<size_t> outgoing;
 };
 
 class Graph
 {
 public:
     Graph();
-    Graph(int vertex_quantity, vector <Edge> edges );
-    Edge getEdge(int position);
-    int getCapacity(int position);
+    Graph(size_t vertex_quantity);
+    Graph(size_t vertex_quantity, const std::vector<Edge> & edges);
+    const Edge & getEdge(size_t pos) const;
+    unsigned long long getCapacity(size_t pos) const;
+    size_t addNewEdge(const Edge & new_edge);
     
 protected:
-    vector <Edge> edges;
-    vector<Vertex> vertex;
+    std::vector <Edge> edges_;
+    std::vector <Vertex> vertex_;
 };
 
 
@@ -59,17 +57,31 @@ protected:
 class Network: public Graph
 {
 public:
-    friend class SimpleForAlg;
-    friend class BlockPreflowMKM;
-    
     Network();
+    Network(size_t vertex_quantity);
     Network(const Graph & graph);
-    int getEdgeFlow(int index);
-private:
-    vector <int> flow; // flow on edges
-    long long max_flow; // value of max flow
     
-    void bfs(int start, vector<int> & info) const;
+    void setMaxFlow(unsigned long long new_max_flow);
+    unsigned long long getMaxFlow() const;
+    unsigned long long countCurrentFlow(size_t s) const;
+    
+    unsigned long long getEdgeFlow(size_t e_ind) const;
+    void setEdgeFlow(size_t e_ind, unsigned long long new_flow);
+    unsigned long long pushFlow(size_t ind, unsigned long long value); // return excess
+    void setFlow(size_t ind, unsigned long long value);
+    unsigned long long getAllowedCapacity(size_t ind) const;
+    size_t backEdge(size_t ind) const;
+    
+    size_t getNetworkSizeV() const;
+    const std::vector<size_t> & getOutgoingEdges(size_t v_ind) const;
+    const Edge & getEdge(size_t e_ind) const;
+    size_t createNewEdgeFromNetwork(size_t e_ind, const Network & net);
+private:
+    std::vector <unsigned long long> flow_; // flow on edges
+    long long max_flow_; // value of max flow
+    std::vector<bool> is_back_edge_;
+    std::vector<size_t> back_edge_ind_; // to associate real and imaginary edges
+    void bfs_(size_t start, std::vector<unsigned long long> & dist) const;
 };
 
 /******************************************
@@ -80,21 +92,22 @@ class SimpleForAlg
 {
 public:
     SimpleForAlg(Graph graph);
-    void findMaxFlow(int s, int t);
-    Network returnNetwork() const;
-    long long getValueOfMaxFlow() const;
+    void findMaxFlow(size_t s, size_t t);
+    const Network & returnNetwork() const;
+    unsigned long long getValueOfMaxFlow() const;
     
 private:
-    Network network;
-    vector<int> height;
-    vector<long long> excess;
-    int start;
-    int finish;
+    Network network_;
+    std::vector<unsigned long long> height_;
+    std::vector<unsigned long long> excess_;
+    std::vector<size_t> cur_edge_to_discharge_;
+    size_t start_;
+    size_t finish_;
     
-    void discharge(int vertex);
-    void relabel(int vertex);
-    void push(int e_ind, int from);
-    void countValueOfMaxFlow();
+    void discharge_(size_t v_ind);
+    void relabel_(size_t v_ind);
+    void push_(size_t e_ind);
+    void setValueOfMaxFlow_();
 };
 
 /******************************************
@@ -104,31 +117,31 @@ class BlockPreflowMKM
 {
 public:
     BlockPreflowMKM(Graph graph);
-    void findMaxFlow(int s, int t);
+    void findMaxFlow(size_t s, size_t t);
     Network returnNetwork() const;
-    long long getValueOfMaxFlow() const;
+    unsigned long long getValueOfMaxFlow() const;
     
 private:
-    Network network;
-    Network lvl_net;
-    vector<long long> potential_in;
-    vector<long long> potential_out;
-    vector<long long> excess;
-    vector<bool> is_deleted_edge;
-    vector<bool> is_deleted_vertex;
-    vector<int> out_edge_pointer;
-    vector<int> in_edge_pointer;
-    vector<int> associated;
-    vector<int> null_potential;
-    int start;
-    int finish;
+    Network network_;
+    Network lvl_net_;
+    std::vector<unsigned long long> potential_in_;
+    std::vector<unsigned long long> potential_out_;
+    std::vector<unsigned long long> excess_;
+    std::vector<bool> is_deleted_edge_;
+    std::vector<bool> is_deleted_vertex_;
+    std::vector<size_t> out_edge_pointer_;
+    std::vector<size_t> in_edge_pointer_;
+    std::vector<size_t> associated_;
+    std::vector<size_t> null_potential_;
+    size_t start_;
+    size_t finish_;
     
-    void makeLvlNet(vector <int> & bfs_info);
-    void initPotential();
-    void dfsDeleteEmptyNodes(int i);
-    void pushFlowForward(int s);
-    void pushFlowBack(int s);
-    void countValueOfMaxFlow();
+    void makeLvlNet_(const std::vector <size_t> & dist);
+    void initPotential_();
+    void dfsDeleteEmptyNodes_(size_t i);
+    void pushFlowForward_(size_t s);
+    void pushFlowBack_(size_t s);
+    void countValueOfMaxFlow_();
 };
 
 

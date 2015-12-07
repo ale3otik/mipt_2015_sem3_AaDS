@@ -1,19 +1,17 @@
-
-
 #include "MainHeader.h"
 
 int main()
 {
     int n,m;
 
-    cin>> n >> m;
-    vector<Edge> edges(m,Edge(0, 0, 0));
+    std::cin>> n >> m;
+    std::vector<Edge> edges(m,Edge(0, 0, 0));
     
     for(int i = 0; i < m; ++i)
     {
-        cin >> edges[i].from;
-        cin >> edges[i].to;
-        cin >> edges[i].capacity;
+        std::cin >> edges[i].from;
+        std::cin >> edges[i].to;
+        std::cin >> edges[i].capacity;
         
         --edges[i].from;
         --edges[i].to;
@@ -24,10 +22,10 @@ int main()
     alg.findMaxFlow(0, n-1);
     
     Network net = alg.returnNetwork();
-    cout << alg.getValueOfMaxFlow() << endl;
+    std::cout << alg.getValueOfMaxFlow() << std::endl;
     for(int i = 0;i < m; ++i)
     {
-        cout <<net.getEdgeFlow(i) << endl;
+        std::cout <<net.getEdgeFlow(i) << std::endl;
     }
     return 0;
 }
