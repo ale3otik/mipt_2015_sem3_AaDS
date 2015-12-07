@@ -19,13 +19,6 @@ lvl_net_(){}
 Network BlockPreflowMKM::returnNetwork() const{
     return this->network_;
 }
-ui64 BlockPreflowMKM::getValueOfMaxFlow() const{
-    return network_.getMaxFlow();
-}
-
-void BlockPreflowMKM::countValueOfMaxFlow_() {
-    network_.setMaxFlow(network_.countCurrentFlow(start_));
-}
 
 /***************************************************/
 
@@ -212,6 +205,5 @@ void BlockPreflowMKM::findMaxFlow(size_t s, size_t t)
             network_.pushFlow(associated_[i], lvl_net_.getEdgeFlow(i));
         }
     }
-    countValueOfMaxFlow_();
 }
 

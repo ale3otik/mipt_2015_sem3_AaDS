@@ -14,16 +14,8 @@ SimpleForAlg::SimpleForAlg(Graph graph):
 network_(graph),
 cur_edge_to_discharge_(network_.getNetworkSizeV(),0){}
 
-ui64 SimpleForAlg::getValueOfMaxFlow() const {
-    return network_.getMaxFlow();
-}
-
 const Network & SimpleForAlg::returnNetwork() const {
     return network_;
-}
-
-void SimpleForAlg::setValueOfMaxFlow_() {
-    network_.setMaxFlow(network_.countCurrentFlow(start_));
 }
 
 void SimpleForAlg::findMaxFlow(size_t st, size_t fin)
@@ -31,14 +23,11 @@ void SimpleForAlg::findMaxFlow(size_t st, size_t fin)
     start_ = st;
     finish_ = fin;
 
-    height_.resize(network_.getNetworkSizeV());
-    excess_.resize(network_.getNetworkSizeV());
-    
-    for (size_t i = 0; i < network_.getNetworkSizeV(); ++i)
-    {
-        height_[i] = 0;
-        excess_[i] = 0;
-    }
+    height_.clear();
+    excess_.clear();
+    height_.resize(network_.getNetworkSizeV(),0);
+    excess_.resize(network_.getNetworkSizeV(),0);
+
     height_[start_] = network_.getNetworkSizeV();
     
     //start init
@@ -46,6 +35,7 @@ void SimpleForAlg::findMaxFlow(size_t st, size_t fin)
     for(size_t i = 0 ; i < outgoing.size(); ++i)
     {
         size_t e_ind = outgoing[i];
+        if(network_.isBackEdge(e_ind)) continue;
         const Edge & cur_edge = network_.getEdge(e_ind);
         excess_[cur_edge.to] += cur_edge.capacity;
         network_.setEdgeFlow(e_ind, cur_edge.capacity);
@@ -63,7 +53,6 @@ void SimpleForAlg::findMaxFlow(size_t st, size_t fin)
             }
         }
     }
-    setValueOfMaxFlow_();
 }
 
 void SimpleForAlg::discharge_(size_t v_ind)
@@ -71,15 +60,15 @@ void SimpleForAlg::discharge_(size_t v_ind)
     size_t e_ind = cur_edge_to_discharge_[v_ind]; // to continue with last point
     const vector<size_t> & outgoing = network_.getOutgoingEdges(v_ind);
     while(excess_[v_ind] > 0) {
-        if(e_ind + 1 == outgoing.size()){
+        if(e_ind == outgoing.size()){
             relabel_(v_ind);
             e_ind = 0;
             continue;
         }
-        
-        const Edge & edge = network_.getEdge(e_ind);
-        if(height_[edge.from] == height_[edge.to] + 1 && network_.getAllowedCapacity(e_ind) > 0) {
-            push_(e_ind);
+        size_t e = outgoing[e_ind];
+        const Edge & edge = network_.getEdge(e);
+        if(height_[edge.from] == height_[edge.to] + 1 && network_.getAllowedCapacity(e) > 0) {
+            push_(e);
         }
         ++e_ind;
     }

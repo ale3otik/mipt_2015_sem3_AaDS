@@ -62,7 +62,6 @@ public:
     Network(const Graph & graph);
     
     void setMaxFlow(unsigned long long new_max_flow);
-    unsigned long long getMaxFlow() const;
     unsigned long long countCurrentFlow(size_t s) const;
     
     unsigned long long getEdgeFlow(size_t e_ind) const;
@@ -99,7 +98,6 @@ public:
     SimpleForAlg(Graph graph);
     void findMaxFlow(size_t s, size_t t);
     const Network & returnNetwork() const;
-    unsigned long long getValueOfMaxFlow() const;
     
 private:
     Network network_;
@@ -112,7 +110,6 @@ private:
     void discharge_(size_t v_ind);
     void relabel_(size_t v_ind);
     void push_(size_t e_ind);
-    void setValueOfMaxFlow_();
 };
 
 /******************************************
@@ -124,7 +121,6 @@ public:
     BlockPreflowMKM(Graph graph);
     void findMaxFlow(size_t s, size_t t);
     Network returnNetwork() const;
-    unsigned long long getValueOfMaxFlow() const;
     
 private:
     Network network_;
@@ -145,7 +141,6 @@ private:
     void initPotential_();
     void bfsDeleteEmptyNodes_(size_t i);
     void pushFlow_(size_t s, bool push_back);
-    void countValueOfMaxFlow_();
 };
 
 

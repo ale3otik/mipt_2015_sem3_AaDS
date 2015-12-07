@@ -34,15 +34,15 @@ Graph::Graph(size_t vertex_quantity, const vector <Edge> & edges) {
     }
 }
 
-inline const Edge & Graph::getEdge(size_t pos) const {
+const Edge & Graph::getEdge(size_t pos) const {
     return edges_[pos];
 }
 
-inline ui64 Graph::getCapacity(size_t pos) const {
+ui64 Graph::getCapacity(size_t pos) const {
     return edges_[pos].capacity;
 }
 
-inline size_t Graph::addNewEdge(const Edge & new_edge) {
+size_t Graph::addNewEdge(const Edge & new_edge) {
     edges_.push_back(new_edge);
     return edges_.size() - 1;
 }
