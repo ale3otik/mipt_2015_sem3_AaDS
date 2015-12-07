@@ -13,8 +13,8 @@ using std::vector;
 using std::queue;
 typedef unsigned long long ui64;
 
-BlockPreflowMKM::BlockPreflowMKM(Graph graph):
-network_(graph) {
+BlockPreflowMKM::BlockPreflowMKM(Network & net):
+network_(net) {
     out_edge_pointer_.resize(network_.getNetworkSizeV());
     in_edge_pointer_.resize(network_.getNetworkSizeV());
     excess_.resize(network_.getNetworkSizeV());
@@ -23,18 +23,16 @@ network_(graph) {
     associated_.reserve(network_.getNetworkSizeE());
     null_potential_.reserve(network_.getNetworkSizeV());
 }
-Network BlockPreflowMKM::returnNetwork() const{
-    return this->network_;
-}
 
 /***************************************************/
 
 void BlockPreflowMKM::makeLvlNet_(const vector<ui64> & dist) {
-    lvl_net_ = Network(network_.getNetworkSizeV());
     out_edge_pointer_.assign(network_.getNetworkSizeV(),0);
     in_edge_pointer_.assign(network_.getNetworkSizeV(),0);
     is_deleted_vertex_.assign(network_.getNetworkSizeV(),false);
     associated_.clear();
+    
+    Graph new_graph(network_.getNetworkSizeV());
     excess_.assign(network_.getNetworkSizeV(),0);
     for(size_t v = 0; v < network_.getNetworkSizeV(); ++v) {
         const vector<size_t> & outgoing = network_.getOutgoingEdges(v);
@@ -45,12 +43,13 @@ void BlockPreflowMKM::makeLvlNet_(const vector<ui64> & dist) {
             if(dist[e_cur.to] == dist[v] + 1 && dist[e_cur.to] <= dist[finish_]
                && network_.getAllowedCapacity(e_ind) > 0)
             {
-                lvl_net_.addNewEdge(Edge(e_cur.from,e_cur.to,network_.getAllowedCapacity(e_ind)));
+                new_graph.addNewEdge(Edge(e_cur.from,e_cur.to,network_.getAllowedCapacity(e_ind)));
                 associated_.push_back(e_ind);
             }
         }
     }
-    lvl_net_.buildBackEdgesAndFlowInfo();
+    lvl_net_ = Network(new_graph);
+
     is_deleted_edge_.clear();
     is_deleted_edge_.resize(lvl_net_.getNetworkSizeE(),false);
 }
@@ -215,5 +214,7 @@ void BlockPreflowMKM::findMaxFlow(size_t s, size_t t) {
             network_.pushFlow(associated_[i], lvl_net_.getEdgeFlow(i));
         }
     }
+    
+    network_.setMaxFlow(network_.countCurrentFlow(s));
 }
 

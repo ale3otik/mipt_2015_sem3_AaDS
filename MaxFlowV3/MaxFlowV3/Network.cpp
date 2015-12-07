@@ -20,7 +20,7 @@ Network::Network():Graph(),max_flow_(0){}
 Network::Network(const Graph & graph):
 Graph(graph),
 max_flow_(0) {
-    buildBackEdgesAndFlowInfo();
+    buildBackEdgesAndFlowInfo_();
 }
 
 const std::vector<size_t> & Network::getOutgoingEdges(size_t v_ind) const {
@@ -47,7 +47,7 @@ bool Network::isBackEdge(size_t e_ind) const {
     return is_back_edge_[e_ind];
 }
 
-void Network::buildBackEdgesAndFlowInfo() {
+void Network::buildBackEdgesAndFlowInfo_() {
     edges_.reserve(edges_.size() * 2);
     
     flow_.resize(edges_.size(),0);
@@ -109,6 +109,15 @@ ui64 Network::countCurrentFlow(size_t s) const {
     }
     return cur_flow;
 }
+
+void Network::setMaxFlow(unsigned long long new_max_flow) {
+    max_flow_ = new_max_flow;
+}
+
+ui64 Network::getMaxFlow() const {
+    return max_flow_;
+}
+
 vector<ui64> Network::countDist(size_t start) const {
     std::vector<ui64> dist;
     bfs_(start, dist);

@@ -10,50 +10,9 @@
 using std::vector;
 typedef unsigned long long ui64;
 
-SimpleForAlg::SimpleForAlg(Graph graph):
-network_(graph),
+SimpleForAlg::SimpleForAlg(Network & net):
+network_(net),
 cur_edge_to_discharge_(network_.getNetworkSizeV(),0){}
-
-const Network & SimpleForAlg::returnNetwork() const {
-    return network_;
-}
-
-void SimpleForAlg::findMaxFlow(size_t st, size_t fin)
-{
-    start_ = st;
-    finish_ = fin;
-
-    height_.clear();
-    excess_.clear();
-    height_.resize(network_.getNetworkSizeV(),0);
-    excess_.resize(network_.getNetworkSizeV(),0);
-
-    height_[start_] = network_.getNetworkSizeV();
-    
-    //start init
-    const vector<size_t> & outgoing = network_.getOutgoingEdges(start_);
-    for(size_t i = 0 ; i < outgoing.size(); ++i)
-    {
-        size_t e_ind = outgoing[i];
-        if(network_.isBackEdge(e_ind)) continue;
-        const Edge & cur_edge = network_.getEdge(e_ind);
-        excess_[cur_edge.to] += cur_edge.capacity;
-        network_.setEdgeFlow(e_ind, cur_edge.capacity);
-    }
-    excess_[finish_] = 0;
-    excess_[start_] = 0;
-
-    bool is_updated = true;
-    while (is_updated) {
-        is_updated = false;
-        for (int v_ind = 0; v_ind < network_.getNetworkSizeV(); ++v_ind) {
-            if(excess_[v_ind] > 0) {
-                is_updated = true;
-                discharge_(v_ind);
-            }
-        }
-    }
-}
 
 void SimpleForAlg::discharge_(size_t v_ind)
 {
@@ -97,4 +56,39 @@ void SimpleForAlg::relabel_(size_t v_ind) {
         }
     }
     height_[v_ind] = min_h + 1;
+}
+
+void SimpleForAlg::findMaxFlow(size_t st, size_t fin)
+{
+    start_ = st;
+    finish_ = fin;
+    
+    height_.assign(network_.getNetworkSizeV(),0);
+    excess_.assign(network_.getNetworkSizeV(),0);
+    
+    height_[start_] = network_.getNetworkSizeV();
+    
+    //start init
+    const vector<size_t> & outgoing = network_.getOutgoingEdges(start_);
+    for(size_t i = 0 ; i < outgoing.size(); ++i) {
+        size_t e_ind = outgoing[i];
+        if(network_.isBackEdge(e_ind)) continue;
+        const Edge & cur_edge = network_.getEdge(e_ind);
+        excess_[cur_edge.to] += cur_edge.capacity;
+        network_.setEdgeFlow(e_ind, cur_edge.capacity);
+    }
+    excess_[finish_] = 0;
+    excess_[start_] = 0;
+    
+    bool is_updated = true;
+    while (is_updated) {
+        is_updated = false;
+        for (int v_ind = 0; v_ind < network_.getNetworkSizeV(); ++v_ind) {
+            if(excess_[v_ind] > 0) {
+                is_updated = true;
+                discharge_(v_ind);
+            }
+        }
+    }
+    network_.setMaxFlow(network_.countCurrentFlow(st));
 }

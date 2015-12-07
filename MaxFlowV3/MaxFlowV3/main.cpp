@@ -18,12 +18,14 @@ int main()
     }
 
     Graph graph(n,edges);
-//    SimpleForAlg alg(graph);
-    BlockPreflowMKM alg(graph);
+    Network net(graph);
+    
+    BlockPreflowMKM alg(net);
+    //SimpleForAlg alg(net);
+    
     alg.findMaxFlow(0, n-1);
     
-    Network net = alg.returnNetwork();
-    std::cout << net.countCurrentFlow(0)<< std::endl;
+    std::cout << net.getMaxFlow()<< std::endl;
     for(size_t i = 0;i < m; ++i) {
         std::cout <<net.getEdgeFlow(i) << std::endl;
     }

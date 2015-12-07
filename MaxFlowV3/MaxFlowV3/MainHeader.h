@@ -62,6 +62,7 @@ public:
     Network(const Graph & graph);
     
     void setMaxFlow(unsigned long long new_max_flow);
+    unsigned long long  getMaxFlow() const;
     unsigned long long countCurrentFlow(size_t s) const;
     
     unsigned long long getEdgeFlow(size_t e_ind) const;
@@ -75,14 +76,14 @@ public:
     size_t getNetworkSizeE() const;
     const std::vector<size_t> & getOutgoingEdges(size_t v_ind) const;
     const Edge & getEdge(size_t e_ind) const;
-    void buildBackEdgesAndFlowInfo(); //ONLY IF THE BACK EDGES DONOT EXIST
     
     bool isBackEdge(size_t e_ind) const;
     std::vector<unsigned long long> countDist(size_t start) const;
     
 private:
+    void buildBackEdgesAndFlowInfo_(); //ONLY IF THE BACK EDGES DONOT EXIST
+    unsigned long long max_flow_;
     std::vector <unsigned long long> flow_; // flow on edges
-    long long max_flow_; // value of max flow
     std::vector<bool> is_back_edge_;
     std::vector<size_t> back_edge_ind_; // to associate real and imaginary edges
     void bfs_(size_t start, std::vector<unsigned long long> & dist) const;
@@ -91,16 +92,14 @@ private:
 /******************************************
  * Simple-For push preflow algorithm
  */
-
 class SimpleForAlg
 {
 public:
-    SimpleForAlg(Graph graph);
+    SimpleForAlg(Network & net);
     void findMaxFlow(size_t s, size_t t);
-    const Network & returnNetwork() const;
     
 private:
-    Network network_;
+    Network & network_;
     std::vector<unsigned long long> height_;
     std::vector<unsigned long long> excess_;
     std::vector<size_t> cur_edge_to_discharge_;
@@ -118,12 +117,11 @@ private:
 class BlockPreflowMKM
 {
 public:
-    BlockPreflowMKM(Graph graph);
+    BlockPreflowMKM(Network & net);
     void findMaxFlow(size_t s, size_t t);
-    Network returnNetwork() const;
     
 private:
-    Network network_;
+    Network & network_;
     Network lvl_net_;
     std::vector<unsigned long long> potential_in_;
     std::vector<unsigned long long> potential_out_;
