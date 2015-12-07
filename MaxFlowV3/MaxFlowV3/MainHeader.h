@@ -11,10 +11,8 @@
 
 #include <vector>
 #include <queue>
-#include <iostream>
-#include <assert.h>
 
-static const long long INF = 1e18;
+static const unsigned long long INF = 1e18;
 /**************************
  * base structures
  */
@@ -137,7 +135,7 @@ private:
     
     void makeLvlNet_(const std::vector <unsigned long long> & dist);
     void initPotential_();
-    void findBlockinFlowMKM_();
+    void findBlockingFlowMKM_();
     void pushBlockingFlow_();
     void bfsDeleteEmptyNodes_(size_t i);
     void pushFlow_(size_t s, bool push_back);

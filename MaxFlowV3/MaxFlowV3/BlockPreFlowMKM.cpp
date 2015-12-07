@@ -184,7 +184,7 @@ void BlockPreflowMKM::pushBlockingFlow_() {
     }
 }
 
-void BlockPreflowMKM::findBlockinFlowMKM_() {
+void BlockPreflowMKM::findBlockingFlowMKM_() {
     initPotential_();
     potential_in_[start_] = INF;
     potential_out_[finish_] = INF;
@@ -206,7 +206,7 @@ void BlockPreflowMKM::findMaxFlow(size_t s, size_t t) {
 
         makeLvlNet_(dist);
        
-        findBlockinFlowMKM_();
+        findBlockingFlowMKM_();
         
         // add new flow to the base network
         for(size_t i = 0; i < lvl_net_.getNetworkSizeE(); ++i) {
