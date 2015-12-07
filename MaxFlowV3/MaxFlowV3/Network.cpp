@@ -84,7 +84,7 @@ size_t Network::createNewEdgeFromNetwork(size_t e_ind, const Network & net) {
     return indr;
 }
 
-unsigned long long Network::pushFlow(size_t ind, ui64 value) {
+ui64 Network::pushFlow(size_t ind, ui64 value) {
     Edge cur;
     ui64 excess;
     if(is_back_edge_[ind]) {
@@ -101,17 +101,17 @@ unsigned long long Network::pushFlow(size_t ind, ui64 value) {
     return value - excess;
 }
 
-void Network::setEdgeFlow(size_t ind, unsigned long long value) {
+void Network::setEdgeFlow(size_t ind, ui64 value) {
     pushFlow(backEdge(ind), getEdgeFlow(ind)); // set 0
     pushFlow(ind, value);
 }
 
-unsigned long long Network::getAllowedCapacity(size_t ind) const {
+ui64 Network::getAllowedCapacity(size_t ind) const {
     if(!is_back_edge_[ind]) return edges_[ind].capacity - flow_[ind];
     return flow_[backEdge(ind)];
 }
 
-unsigned long long Network::countCurrentFlow(size_t s) const {
+ui64 Network::countCurrentFlow(size_t s) const {
     i64 cur_flow = 0;
     const Vertex & cur = vertex_[s];
     for(ui64 i = 0; i < cur.outgoing.size(); ++i) {
@@ -140,8 +140,7 @@ void Network::bfs_(size_t start, vector<ui64> & dist) const {
         Vertex cur_ver = vertex_[bfs_queue.front()];
         bfs_queue.pop();
         
-        vector<size_t>::iterator edge_it;
-        cur_ver.outgoing.begin();
+        vector<size_t>::iterator edge_it = cur_ver.outgoing.begin();
         
         while(edge_it != cur_ver.outgoing.end()) {
             Edge cur_edge = edges_[*edge_it];

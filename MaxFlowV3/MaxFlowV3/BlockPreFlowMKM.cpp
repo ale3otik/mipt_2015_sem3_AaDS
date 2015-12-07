@@ -34,30 +34,36 @@ void BlockPreflowMKM::makeLvlNet_(const vector<ui64> & dist) {
     {
         const vector<size_t> & outgoing = network_.getOutgoingEdges(v);
         for(size_t e = 0; e < outgoing.size(); ++e) {
-            const Edge & e_cur = network_.Graph::getEdge(outgoing[e]);
+            size_t e_ind = outgoing[e];
+            const Edge & e_cur = network_.Graph::getEdge(e_ind);
             
-            if(dist[e_cur.to] == dist[v] + 1 && dist[e_cur.to] <= dist[finish_] && network_.getAllowedCapacity(e) > 0 ) {
-                lvl_net_.createNewEdgeFromNetwork(e, network_);
-                associated_.push_back(e);
-                associated_.push_back(0); // to save numeration with back edges
+            if(dist[e_cur.to] == dist[v] + 1 && dist[e_cur.to] <= dist[finish_] && network_.getAllowedCapacity(e_ind) > 0 ) {
+                lvl_net_.createNewEdgeFromNetwork(e_ind, network_);
+                associated_.push_back(e_ind);
+                associated_.push_back(INF); // to save numeration with back edges
                 ++new_edges_size;
             }
         }
     }
-    is_deleted_edge_ = vector<bool>(new_edges_size,false);
+    is_deleted_edge_ = vector<bool>(lvl_net_.getNetworkSizeE(),false);
 }
 
 void BlockPreflowMKM::initPotential_() {
     potential_in_ = vector<ui64>(network_.getNetworkSizeV(),0);
     potential_out_ = vector<ui64>(network_.getNetworkSizeV(),0);
     
-    for(int v = 0 ; v < lvl_net_.getNetworkSizeV(); ++v)
+    for(size_t v = 0 ; v < lvl_net_.getNetworkSizeV(); ++v)
     {
         const vector<size_t> & outgoing = lvl_net_.getOutgoingEdges(v);
-        for(int e = 0; e < outgoing.size(); ++ e)
+        for(size_t e = 0; e < outgoing.size(); ++ e)
         {
-            potential_in_[v] += lvl_net_.getAllowedCapacity(e);
-            potential_out_[v] += lvl_net_.getAllowedCapacity(lvl_net_.backEdge(e));
+            size_t e_ind = outgoing[e];
+            if(lvl_net_.isBackEdge(e_ind)) {
+                potential_in_[v] += lvl_net_.getAllowedCapacity(lvl_net_.backEdge(e_ind));
+            }
+            else {
+                potential_out_[v] += lvl_net_.getAllowedCapacity(e_ind);
+            }
         }
     }
 }
@@ -81,8 +87,15 @@ void BlockPreflowMKM::bfsDeleteEmptyNodes_(size_t s) {
             const Edge & e = lvl_net_.getEdge(e_ind);
         
             if(!is_deleted_edge_[e_ind]) {
-                potential_in_[e.to] -= lvl_net_.getAllowedCapacity(e_ind);
-                potential_out_[e.to] -= lvl_net_.getAllowedCapacity(lvl_net_.backEdge(e_ind));
+                if(!lvl_net_.isBackEdge(e_ind)){
+                    potential_in_[e.to] -= lvl_net_.getAllowedCapacity(e_ind);
+                }
+                else {
+                    potential_out_[e.to] -= lvl_net_.getAllowedCapacity(lvl_net_.backEdge(e_ind));
+                }
+                if(std::min(potential_in_[e.to],potential_out_[e.to]) == 0) {
+                    next_deleted.push(e.to);
+                }
             }
             is_deleted_edge_[e_ind] = true;
             is_deleted_edge_[lvl_net_.backEdge(e_ind)] = true;
@@ -123,16 +136,15 @@ void BlockPreflowMKM::pushFlow_(size_t s, bool push_back)
             excess_[s] -= pushed;
             excess_[exc_to] += pushed;
             potential_out_[lvl_net_.getEdge(e_ind).from] -= pushed;
-            potential_in_[lvl_net_.getEdge(e_ind).to] += pushed;
-            next_vertices.push(lvl_net_.getEdge(e_ind).to);
+            potential_in_[lvl_net_.getEdge(e_ind).to] -= pushed;
+            next_vertices.push(exc_to);
             if(excess_[s] == 0) break;
             else ++edge_pointer[s];
     
-            if(std::min(potential_in_[s],potential_out_[s]) == 0)
-            {
-                null_potential_.push_back(s);
-            }
-    
+        }
+        if(std::min(potential_in_[s],potential_out_[s]) == 0)
+        {
+            null_potential_.push_back(s);
         }
     }
 }
@@ -168,7 +180,7 @@ void BlockPreflowMKM::findMaxFlow(size_t s, size_t t)
         {
             //find min potential
             
-            null_potential_.resize(0);
+            null_potential_.clear();
             
             ui64 min_potential = INF;
             size_t min_ind = start_;
