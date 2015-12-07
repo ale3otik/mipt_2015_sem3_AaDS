@@ -75,11 +75,11 @@ public:
     size_t getNetworkSizeE() const;
     const std::vector<size_t> & getOutgoingEdges(size_t v_ind) const;
     const Edge & getEdge(size_t e_ind) const;
-    size_t createNewEdgeFromNetwork(size_t e_ind, const Network & net);
+    void buildBackEdgesAndFlowInfo(); //ONLY IF THE BACK EDGES DONOT EXIST
     
     bool isBackEdge(size_t e_ind) const;
+    std::vector<unsigned long long> countDist(size_t start) const;
     
-    void countDist(size_t start, std::vector<unsigned long long> & dist) const;
 private:
     std::vector <unsigned long long> flow_; // flow on edges
     long long max_flow_; // value of max flow
@@ -139,6 +139,8 @@ private:
     
     void makeLvlNet_(const std::vector <unsigned long long> & dist);
     void initPotential_();
+    void findBlockinFlowMKM_();
+    void pushBlockingFlow_();
     void bfsDeleteEmptyNodes_(size_t i);
     void pushFlow_(size_t s, bool push_back);
 };

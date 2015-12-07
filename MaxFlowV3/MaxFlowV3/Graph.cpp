@@ -44,5 +44,6 @@ ui64 Graph::getCapacity(size_t pos) const {
 
 size_t Graph::addNewEdge(const Edge & new_edge) {
     edges_.push_back(new_edge);
+    vertex_[new_edge.from].outgoing.push_back(edges_.size() - 1);
     return edges_.size() - 1;
 }

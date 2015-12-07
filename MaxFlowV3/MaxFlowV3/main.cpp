@@ -18,6 +18,7 @@ int main()
     }
 
     Graph graph(n,edges);
+//    SimpleForAlg alg(graph);
     BlockPreflowMKM alg(graph);
     alg.findMaxFlow(0, n-1);
     
