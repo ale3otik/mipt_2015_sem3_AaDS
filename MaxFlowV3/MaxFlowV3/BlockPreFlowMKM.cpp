@@ -157,7 +157,7 @@ void BlockPreflowMKM::pushBlockingFlow_() {
     while(true) {
         //find min potential
         null_potential_.clear();
-        ui64 min_potential = INF;
+        ui64 min_potential = Network::INF;
         size_t min_ind = start_;
         for(size_t i = 0; i < lvl_net_.getNetworkSizeV(); ++i) {
             if(is_deleted_vertex_[i] || i == finish_) continue;
@@ -168,7 +168,7 @@ void BlockPreflowMKM::pushBlockingFlow_() {
             }
         }
         
-        if(min_potential == INF || min_potential == 0) break;
+        if(min_potential == Network::INF || min_potential == 0) break;
         
         excess_[min_ind] = min_potential;
         pushFlow_(min_ind,false);
@@ -186,8 +186,8 @@ void BlockPreflowMKM::pushBlockingFlow_() {
 
 void BlockPreflowMKM::findBlockingFlowMKM_() {
     initPotential_();
-    potential_in_[start_] = INF;
-    potential_out_[finish_] = INF;
+    potential_in_[start_] = Network::INF;
+    potential_out_[finish_] = Network::INF;
 
     for(size_t i = 0 ; i < lvl_net_.getNetworkSizeV(); ++i) {
         if(std::min(potential_out_[i],potential_in_[i]) == 0) {
@@ -202,7 +202,7 @@ void BlockPreflowMKM::findMaxFlow(size_t s, size_t t) {
     finish_ = t;
     while(true) {
         vector<ui64> dist = network_.countDist(start_);
-        if(dist[finish_] == INF) break;
+        if(dist[finish_] == Network::INF) break;
 
         makeLvlNet_(dist);
        

@@ -12,7 +12,6 @@
 #include <vector>
 #include <queue>
 
-static const unsigned long long INF = 1e18;
 /**************************
  * base structures
  */
@@ -55,6 +54,7 @@ protected:
 class Network: public Graph
 {
 public:
+    static const unsigned long long INF = 1e18;
     Network();
     Network(size_t vertex_quantity);
     Network(const Graph & graph);

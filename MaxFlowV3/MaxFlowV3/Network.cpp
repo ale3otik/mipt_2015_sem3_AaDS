@@ -13,7 +13,7 @@ using std::vector;
 using std::queue;
 typedef long long i64;
 typedef unsigned long long ui64;
-
+const ui64 Network::INF;
 Network::Network(size_t vertex_quantity):Graph(vertex_quantity),
 max_flow_(0){}
 Network::Network():Graph(),max_flow_(0){}
@@ -142,7 +142,7 @@ void Network::bfs_(size_t start, vector<ui64> & dist) const {
             Edge cur_edge = edges_[*edge_it];
             size_t to = cur_edge.to;
             size_t from = cur_edge.from;
-            if(getAllowedCapacity(*edge_it) > 0 && dist[to] == INF) {
+            if(getAllowedCapacity(*edge_it) > 0 && dist[to] ==  Network::INF) {
                 dist[to] = dist[from] + 1;
                 bfs_queue.push(to);
             }
