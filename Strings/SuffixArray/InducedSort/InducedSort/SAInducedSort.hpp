@@ -13,53 +13,59 @@
 
 class SAInducedSort{
 public:
-    static void sort(const std::string & str, std::vector<long long> & suff_array);
-    static void buildLCP(const std::string & str,
-                         const std::vector<long long> & suff_arr,
-                         std::vector<long long> & lcp);
+    static const size_t INF = (size_t)(-1);
+    
+    static std::vector<size_t> buildSA(const std::string & str);
+    static std::vector<size_t> buildLCP(const std::string & str,
+                                        const std::vector<size_t> & suff_arr);
+    
 private:
 
     class RecursiveSorter {
     public:
-        RecursiveSorter(const std::vector<long long> & str,
-                        std::vector<long long> & suff_array,
-                        const long long alp_sz);
+        RecursiveSorter(const std::vector<size_t> & str,
+                        std::vector<size_t> & suff_array,
+                        const size_t alp_sz);
         void SAinducedSort();
     private:
+        
+        enum ETS_TYPE_OF_SORT_ {
+            LMS_SUBSTRINGS_,
+            INDUCE_SA_FROM_SA1_
+        };
 
-        enum TypeOfSort {
-            LMSsubstrings,
-            InduceSAfromSA1
+        enum ETS_LMS_SUBSTRINGS_ {
+            L_TYPE_,
+            S_TYPE_
         };
         
-        static const bool L_TYPE = false;
-        static const bool S_TYPE = true;
+        const size_t alp_size_;
 
-        const long long alp_size;
+        const std::vector<size_t> & str_;
+        std::vector<size_t> & suff_array_;
 
-        const std::vector<long long> & str;
-        std::vector<long long> & suff_array;
+        std::vector<ETS_LMS_SUBSTRINGS_> type_; // L or S type
+        std::vector<size_t> lms_pointers_; // positions of all first symb in LMS substrings
+        std::vector<bool> is_lms_; //is s[i] is start of lms substring
+        std::vector<size_t> buckets_; //index of head each i-sym bucket
 
-        std::vector<bool> type; // L or S type
-        std::vector<long long> lms_pointers; // positions of all first symb in LMS substrings
-        std::vector<bool> is_lms; //index of head each i-sym bucket
-        std::vector<long long> buckets;
-
-        std::vector<long long> back_map_alp; // to iduce SA from SA
+        std::vector<size_t> back_map_alp_; // to iduce SA from SA
         // for next recursive step and induce
-        long long next_alp;
-        std::vector<long long> next_str;
-        std::vector<long long> next_suff_array;
+        size_t next_alp_size_;
+        std::vector<size_t> next_str_;
+        std::vector<size_t> next_suff_array_;
         
-        bool isLmsSubstringEqual(const long long fr, const long long sd);
-        void buildNewStr();
-        bool initType(); // return is each symb unique
-        void initLmsPointers();
-        void initBuckets();
-        void lmsInitForSort(std::vector<long long> bucket_tails);
-        void saInitForSort(std::vector<long long> bucket_tails);
-        void SAsimpleSort();
-        void generalInducedSort(TypeOfSort action);
+        bool isLmsSubstringEqual_(size_t first, size_t second);
+        void buildNewStr_();
+        bool initType_(); // return is all symbol are unique
+        void initLmsPointers_();
+        void initBuckets_();
+
+        // need vector to copy to save previous version of bucket_tails
+        void lmsInitForSort_(std::vector<size_t> bucket_tails);
+        void saInitForSort_(std::vector<size_t> bucket_tails);
+        void SAsimpleSort_();
+        void generalInducedSort_(ETS_TYPE_OF_SORT_ action);
     };
 };
 
