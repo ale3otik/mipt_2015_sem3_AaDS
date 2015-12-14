@@ -120,7 +120,7 @@ size_t SuffixTree::SuffixTreeBuilder::makeNode_(size_t last_ind, size_t offset, 
     return new_v_ind;
 }
 
-size_t SuffixTree::SuffixTreeBuilder::testFromEdge(size_t ind, char next_symbol) {
+size_t SuffixTree::SuffixTreeBuilder::testFromEdge_(size_t ind, char next_symbol) {
     char expected_char = getSymbolFromEdge_(ind, edge_offset_);
     if(expected_char == next_symbol) {
         if(edge_offset_ + 1 == tree_->getEdgeLength(ind)) {
@@ -139,7 +139,7 @@ size_t SuffixTree::SuffixTreeBuilder::testFromEdge(size_t ind, char next_symbol)
     return makeNode_(ind, edge_offset_, next_symbol);
 }
 
-size_t SuffixTree::SuffixTreeBuilder::testFromNode(size_t ind, char next_symbol) {
+size_t SuffixTree::SuffixTreeBuilder::testFromNode_(size_t ind, char next_symbol) {
     if(need_link_from_ != 1) {
         tree_->nodes[need_link_from_].suff_link = ind;
         need_link_from_ = 1;
@@ -164,11 +164,11 @@ void SuffixTree::SuffixTreeBuilder::addNextSymbol_(char next_symbol) {
         size_t new_v_ind;
         size_t link_to;
         if(edge_offset_ == 0) {
-            new_v_ind = testFromNode(ind, next_symbol);
+            new_v_ind = testFromNode_(ind, next_symbol);
             if(new_v_ind == INF) break;
             link_to = tree_->nodes[new_v_ind].p_ind;
         } else {
-            new_v_ind = testFromEdge(ind, next_symbol);
+            new_v_ind = testFromEdge_(ind, next_symbol);
             if(new_v_ind == INF) break;
             link_to = new_v_ind;
         }

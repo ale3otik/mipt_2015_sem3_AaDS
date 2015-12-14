@@ -50,8 +50,8 @@ private:
         
         void addNextSymbol_(char symbol);
         void createBaseForTree_(); // create root and dummy
-        size_t testFromNode(size_t ind, char next_symbol); // use when offset == 0, create leaf or empty
-        size_t testFromEdge(size_t ind, char next_symbol); // create node + leaf or empty
+        size_t testFromNode_(size_t ind, char next_symbol); // use when offset == 0, create leaf or empty
+        size_t testFromEdge_(size_t ind, char next_symbol); // create node + leaf or empty
         size_t makeNode_(size_t child_ind,size_t offset,char next_char); // no leaf
         size_t makeLeaf_(size_t parent, char symbol);
         char getSymbolFromEdge_(size_t ind, size_t offset) const;
