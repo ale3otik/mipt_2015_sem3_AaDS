@@ -9,15 +9,25 @@
 #include <iostream>
 #include <string>
 #include "SuffixTree.hpp"
-using namespace std;
+
 typedef long long ll;
+using std::vector;
+using std::string;
+
+ll getTreeEdgeLengthSumm(const SuffixTree & tree) {
+    ll ans = 0;
+    for(size_t i = 2; i < tree.nodes.size(); ++i) {
+        ans += tree.getEdgeLength(i);
+    }
+    return ans;
+}
+
 int main() {
-    ios::sync_with_stdio(false);
-    
+    std::ios::sync_with_stdio(false);
     string str;
     ll k;
-    cin >> k >> str;
-    for(int i = 0; i < str.size(); ++i) {
+    std::cin >> k >> str;
+    for(size_t i = 0; i < str.size(); ++i) {
         str[i] -= 'a' - 2;
     }
     
@@ -25,18 +35,18 @@ int main() {
     
     string substr;
     substr.reserve(k);
+    
     vector<ll> ans(str.size(),0);
-    for(ll j = 0; j < str.size(); ++j) {
+    for(size_t j = 0; j < str.size(); ++j) {
         substr = full_str.substr(j,k);
         SuffixTree tree(substr);
-        for(int i = 2; i < tree.nodes.size(); ++i) {
-            ans[j] += tree.getEdgeLength(i);
-        }
+        tree.buildTree();
+        ans[j] = getTreeEdgeLengthSumm(tree);
     }
     
     for(ll i = 0; i < ans.size(); ++i) {
-        cout << ans[i] << " ";
+        std::cout << ans[i] << " ";
     }
-    cout << endl;
+    std::cout << std::endl;
     return 0;
 }

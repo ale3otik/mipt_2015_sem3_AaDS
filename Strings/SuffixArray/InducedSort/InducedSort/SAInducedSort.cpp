@@ -132,10 +132,9 @@ void SAInducedSort::RecursiveSorter::generalInducedSort_(ETS_TYPE_OF_SORT_ type_
             saInitForSort_(bucket_tails);
     }
 
-    
     //step 2 : induced sort of lms prefixes
-    // scan from head to end
-    // assign from head to end each bucket
+    //scan from head to end
+    //assign from head to end each bucket
     for(size_t i = 0; i < suff_array_.size(); ++i) {
         if(suff_array_[i] == SAInducedSort::INF) continue;
         
@@ -176,14 +175,13 @@ void SAInducedSort::RecursiveSorter::SAinducedSort() {
     suff_array_.clear();
     suff_array_.resize(str_.size(), SAInducedSort::INF);
     
-    // all symbols are unique
-    
     bool isAllSymbolsUnique = initType_();
-    
+
     if(isAllSymbolsUnique) {
         SAsimpleSort_();
         return;
     }
+    
     initLmsPointers_();
     initBuckets_();
     generalInducedSort_(LMS_SUBSTRINGS_);
@@ -253,16 +251,16 @@ vector<size_t> SAInducedSort::buildSA(const string & inputStr) {
         if(inputStr[i] > alp_size) alp_size = inputStr[i];
     }
     
-    vector<size_t> str(inputStr.size() + 1);
-    str[str.size()-1] = 0; // special symbol
+    vector<size_t> vstr(inputStr.size() + 1);
+    vstr[vstr.size()-1] = 0; // special symbol
     
     //do shift to economy memory
     for(size_t i = 0; i < inputStr.size(); ++i) {
-        str[i] = inputStr[i] - shift + 1;
+        vstr[i] = inputStr[i] - shift + 1;
     }
     
     alp_size -= shift - 2;
-    RecursiveSorter(str,suff_array,alp_size).SAinducedSort();
+    RecursiveSorter(vstr,suff_array,alp_size).SAinducedSort();
     return suff_array;
 }
 
