@@ -27,19 +27,14 @@ bool SAInducedSort::RecursiveSorter::initType_() {
     vector<bool> used(alp_size_,false);
     
     type_[str_.size() - 1] = S_TYPE_;
-    for(size_t j = 1; j < str_.size(); ++j) {
-        size_t i = str_.size() - j - 1;
+    for(size_t i = str_.size() - 2; i != INF; --i) {
         if(used[str_[i]]) isAllUnique = false;
         used[str_[i]] = true;
         
         if(str_[i] < str_[i+1]) {
             type_[i] = S_TYPE_;
         } else {
-            if(str_[i] > str_[i+1]) {
-                type_[i] = L_TYPE_;
-            } else {
-                type_[i] = type_[i+1];
-            }
+            type_[i] = (str_[i] > str_[i+1]) ? L_TYPE_ : type_[i+1];
         }
     }
     return isAllUnique;
