@@ -72,10 +72,8 @@ void SAInducedSort::RecursiveSorter::buildNewStr_() {
     
     /******** make new alphabet ***************************/
     next_alp_size_ = 0;
-    size_t r,l;
+    size_t l = 0, r = 1;
     vector<size_t> alp_type(str_.size(),SAInducedSort::INF);
-    l = 0;
-    r = 1;
     alp_type[suff_array_[l]] = 0;
     while(r < suff_array_.size()) {
         if(is_lms_[suff_array_[r]]){
@@ -117,6 +115,20 @@ void SAInducedSort::RecursiveSorter::saInitForSort_(vector<size_t> bucket_tails)
     }
 }
 
+void SAInducedSort::RecursiveSorter::induceStep2_(ETS_LMS_SUBSTRINGS_ request_type,
+                                                  std::vector<size_t> & bucket_ptrs) {
+    int dir = (request_type == L_TYPE_) ? 1 : -1;
+    for(size_t j = 0; j < suff_array_.size(); ++j) {
+        size_t i = (request_type == L_TYPE_) ? j : suff_array_.size() - 1 - j;
+        
+        if(suff_array_[i] == SAInducedSort::INF) continue;
+        size_t checked_pos = suff_array_[i] - 1;
+        if(type_[checked_pos] == request_type) {
+            suff_array_[bucket_ptrs[str_[checked_pos]]] = checked_pos;
+            bucket_ptrs[str_[checked_pos]] += dir;
+        }
+    }
+}
 void SAInducedSort::RecursiveSorter::generalInducedSort_(ETS_TYPE_OF_SORT_ type_of_sort) {
     vector<size_t> bucket_heads(buckets_);
     vector<size_t> bucket_tails(bucket_heads.size());
@@ -132,31 +144,11 @@ void SAInducedSort::RecursiveSorter::generalInducedSort_(ETS_TYPE_OF_SORT_ type_
             saInitForSort_(bucket_tails);
     }
 
-    //step 2 : induced sort of lms prefixes
-    //scan from head to end
-    //assign from head to end each bucket
-    for(size_t i = 0; i < suff_array_.size(); ++i) {
-        if(suff_array_[i] == SAInducedSort::INF) continue;
-        
-        size_t checked_pos = suff_array_[i] - 1;
-        if(type_[checked_pos] == L_TYPE_) {
-            suff_array_[bucket_heads[str_[checked_pos]]] = checked_pos;
-            ++bucket_heads[str_[checked_pos]];
-        }
-    }
-    
-    // scan from end to head
-    // assign from end to head each bucket
-    for(size_t i = suff_array_.size() - 1; i != SAInducedSort::INF; --i) {
-        if(suff_array_[i] == SAInducedSort::INF) continue;
-        
-        size_t checked_pos = suff_array_[i] - 1;
-        if(type_[checked_pos] == S_TYPE_) {
-            suff_array_[bucket_tails[str_[checked_pos]]] = checked_pos;
-            --bucket_tails[str_[checked_pos]];
-        }
-    }
+    //step 2 : induced sort
+    induceStep2_(L_TYPE_, bucket_heads); //scan & assign from head to end
+    induceStep2_(S_TYPE_, bucket_tails); // scan & assign from end to head
 }
+
 void SAInducedSort::RecursiveSorter::SAsimpleSort_() {
     vector<size_t> sorted(alp_size_, SAInducedSort::INF);
     for(size_t i = 0; i < str_.size(); ++i) {

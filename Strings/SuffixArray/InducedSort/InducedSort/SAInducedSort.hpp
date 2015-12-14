@@ -65,6 +65,7 @@ private:
         void lmsInitForSort_(std::vector<size_t> bucket_tails);
         void saInitForSort_(std::vector<size_t> bucket_tails);
         void SAsimpleSort_();
+        void induceStep2_(ETS_LMS_SUBSTRINGS_ request_type, std::vector<size_t> & bucket_ptrs);
         void generalInducedSort_(ETS_TYPE_OF_SORT_ action);
     };
 };
